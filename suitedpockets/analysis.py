@@ -93,12 +93,15 @@ def get_player_summary(input_df: pd.DataFrame) -> pd.DataFrame:
 
     summary_ten['win_rate_ten'] = np.round(summary_ten['wins_ten'] / summary_ten['played_ten'],2)
 
+    summary_ten = summary_ten.drop('played_ten', axis=1)
+
     summary = input_df.groupby('player').agg(
+        costs=('stake', 'sum'),
         winnings=('winnings', 'sum'),
         wins=('is_winner', 'sum'),
         played=('game_overall', 'count')
     )
     summary['win_rate'] = np.round(summary['wins'] / summary['played'],2)
-
+    summary['form'] = np.round(summary['winnings'] / summary['costs'], 2)
 
     return summary.merge(summary_ten, on='player', how='left').reset_index(drop=False)
