@@ -45,7 +45,7 @@ def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def get_losing_streaks(df: pd.DataFrame) -> pd.DataFrame:
+def get_losing_streaks(df: pd.DataFrame, n: int=20) -> pd.DataFrame:
     losing_streaks = df.groupby(['player', 'win_count']).agg(
         streak_start_date=('game_date', 'min'),
         streak_start_game=('game_overall', 'min'),
@@ -55,10 +55,17 @@ def get_losing_streaks(df: pd.DataFrame) -> pd.DataFrame:
         is_active=('is_last_game', 'sum')
     ).reset_index()
 
+
     losing_streaks['streak_length'] = losing_streaks['streak_length'] - 1
     losing_streaks = losing_streaks.drop('win_count', axis=1)
 
-    return losing_streaks.loc[losing_streaks['streak_length'] > 0]
+    losing_streaks = losing_streaks.loc[losing_streaks['streak_length'] > 0]
+
+    losing_streaks = losing_streaks.sort_values(by='streak_length', ascending=False).reset_index(drop=True).iloc[0:n,:]
+    losing_streaks['streak_rank'] = losing_streaks.index + 1
+    losing_streaks['streak_name'] = losing_streaks['player'] + ': ' + losing_streaks['streak_length'].astype(str) + ' games'
+
+    return losing_streaks
 
 
 def get_head_to_head(df: pd.DataFrame, player_one: str, player_two: str) -> pd.DataFrame:

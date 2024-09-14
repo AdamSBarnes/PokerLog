@@ -30,9 +30,16 @@ app_ui = ui.page_sidebar(
     ui.navset_tab(
         ui.nav_panel(
             "Player Summary",
-            ui.output_data_frame("player_summary_output"),
-            ui.br(),
-            output_widget("form_plot_out", width="90%"),
+            ui.layout_columns(
+                ui.card(
+                    ui.card_header("Performance Summary"),
+                    ui.output_data_frame("player_summary_output")
+                ),
+                ui.card(
+                    ui.card_header("Return on Investment"),
+                    output_widget("form_plot_out", width="90%")
+                )
+            )
         ),
         ui.nav_panel(
             "Losing Streaks",

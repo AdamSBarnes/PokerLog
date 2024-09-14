@@ -12,8 +12,8 @@ def form_plot(df: pd.DataFrame):
     )
 
     fig.update_layout(
-        height=1000,
-        title="Player Return on Investment",  # Chart title
+        height=700,
+        #title="Player Return on Investment",  # Chart title
         xaxis_title="Game Number",
         yaxis_title="Return per $$ spent",  # Y-axis label
         yaxis=dict(
