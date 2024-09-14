@@ -1,6 +1,10 @@
 from shiny import App, reactive, render, ui
 from pathlib import Path
 from suitedpockets.analysis import load_data, get_player_summary, process_data
+from suitedpockets.plot import form_plot
+from shinywidgets import output_widget, render_widget
+
+
 
 www_dir = Path(__file__).parent / "www"
 
@@ -26,7 +30,9 @@ app_ui = ui.page_sidebar(
     ui.navset_tab(
         ui.nav_panel(
             "Player Summary",
-            ui.output_data_frame("player_summary_output")
+            ui.output_data_frame("player_summary_output"),
+            ui.br(),
+            output_widget("form_plot_out", width="90%"),
         ),
         ui.nav_panel(
             "Losing Streaks",
@@ -47,6 +53,10 @@ def server(input, output, session):
     @reactive.calc
     def processed_data():
         return process_data(raw_data.loc[raw_data['season'].isin([int(i) for i in input.seasons()])])
+
+    @render_widget
+    def form_plot_out():
+        return form_plot(processed_data())
 
     @reactive.calc
     def player_summary():
