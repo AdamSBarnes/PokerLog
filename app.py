@@ -1,6 +1,6 @@
 from shiny import App, reactive, render, ui
 from pathlib import Path
-from suitedpockets.analysis import load_data, get_player_summary, process_data, get_losing_streaks
+from suitedpockets.analysis import load_data, get_player_summary, process_data, get_losing_streaks, load_raw
 from suitedpockets.plot import form_plot, plot_losing_streaks
 from shinywidgets import output_widget, render_widget
 from shinyswatch import theme
@@ -8,7 +8,8 @@ from shinyswatch import theme
 www_dir = Path(__file__).parent / "www"
 
 FILE_PATH = "data/complete_stats.csv"
-raw_data = load_data(FILE_PATH)
+melt_data = load_data(FILE_PATH)
+raw_data = load_raw(FILE_PATH)
 
 app_ui = ui.page_sidebar(
     ui.sidebar(
@@ -60,6 +61,10 @@ app_ui = ui.page_sidebar(
                     ui.output_ui("p2_pick")
                 )
             ),
+        ),
+        ui.nav_panel(
+            "Game History",
+            ui.output_data_frame("raw_result_output")
         )
     )
 )
@@ -67,7 +72,7 @@ app_ui = ui.page_sidebar(
 
 def server(input, output, session):
     def players():
-        return raw_data['player'].unique()
+        return melt_data['player'].unique()
 
     @render.ui
     def p1_pick():
@@ -89,7 +94,7 @@ def server(input, output, session):
 
     @reactive.calc
     def processed_data():
-        return process_data(raw_data.loc[raw_data['season'].isin([int(i) for i in input.seasons()])])
+        return process_data(melt_data.loc[melt_data['season'].isin([int(i) for i in input.seasons()])])
 
     @reactive.calc
     def losing_streaks():
@@ -121,6 +126,12 @@ def server(input, output, session):
     @render.text
     def txt_output():
         return f"Text output: {input.seasons()}"
+
+    @output
+    @render.data_frame
+    def raw_result_output():
+        return raw_data.loc[raw_data['season'].isin([int(i) for i in input.seasons()])]
+
 
 
 app = App(app_ui, server, static_assets=www_dir)
