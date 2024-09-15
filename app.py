@@ -54,16 +54,38 @@ app_ui = ui.page_sidebar(
         ),
         ui.nav_panel(
             "Head to Head",
-            ui.br()
+            ui.layout_columns(
+                ui.card(
+                    ui.output_ui("p1_pick"),
+                    ui.output_ui("p2_pick")
+                )
+            ),
         )
-    ),
-    #theme=theme.superhero
+    )
 )
 
 
 def server(input, output, session):
     def players():
         return raw_data['player'].unique()
+
+    @render.ui
+    def p1_pick():
+        return ui.input_select(
+            id="input_p1",
+            label = "Player One",
+            choices=[p for p in players()],
+            selected=players()[0]
+        )
+
+    @render.ui
+    def p2_pick():
+        return ui.input_select(
+            id="input_p2",
+            label="Player Two",
+            choices=[p for p in players()],
+            selected=players()[1]
+        )
 
     @reactive.calc
     def processed_data():
