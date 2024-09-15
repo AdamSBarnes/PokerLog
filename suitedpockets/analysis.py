@@ -52,9 +52,16 @@ def get_losing_streaks(df: pd.DataFrame, n: int=20) -> pd.DataFrame:
         streak_end_date=('game_date', 'max'),
         streak_end_game=('game_overall', 'max'),
         streak_length=('game_overall', 'size'),
+        streak_loss=('stake', 'sum'),
         is_active=('is_last_game', 'sum')
     ).reset_index()
 
+
+    losing_streaks['streak_loss'] = losing_streaks['streak_loss'].apply(lambda x: f'${x:,.0f}')
+
+    # convert to date from datetime
+    losing_streaks['streak_end_date'] = losing_streaks['streak_end_date'].dt.date.astype(str)
+    losing_streaks['streak_start_date'] = losing_streaks['streak_start_date'].dt.date.astype(str)
 
     losing_streaks['streak_length'] = losing_streaks['streak_length'] - 1
     losing_streaks = losing_streaks.drop('win_count', axis=1)
@@ -109,6 +116,15 @@ def get_player_summary(input_df: pd.DataFrame) -> pd.DataFrame:
         played=('game_overall', 'count')
     )
     summary['win_rate'] = np.round(summary['wins'] / summary['played'],2)
-    summary['form'] = np.round(summary['winnings'] / summary['costs'], 2)
+    summary['return_rate'] = np.round(summary['winnings'] / summary['costs'], 2).apply(lambda x: f'${x:,.2f}')
 
-    return summary.merge(summary_ten, on='player', how='left').reset_index(drop=False)
+
+    summary['net_position'] = (summary['winnings'] - summary['costs']).apply(lambda x: f'${x:,.0f}')
+
+    summary['costs'] = summary['costs'].apply(lambda x: f'${x:,.0f}')
+    summary['winnings'] = summary['winnings'].apply(lambda x: f'${x:,.0f}')
+    summary['win_rate'] = summary['win_rate'] .apply(lambda x: f'{x * 100:.0f}%')
+
+    summary = summary.merge(summary_ten, on='player', how='left').reset_index(drop=False).sort_values(by='return_rate', ascending=False)
+
+    return summary[['player', 'costs', 'winnings', 'net_position', 'wins', 'wins_ten', 'win_rate', 'return_rate']]

@@ -1,6 +1,39 @@
 import pandas as pd
 import plotly.express as px
 
+color_palette = {
+    'Knottorious': '#99B898',   # Cyan Blue
+    'Cedric': '#FECEAB',   # Coral
+    'Dale-O': '#FF847C',   # Lime Green
+    'Nik': '#E84A5F',   # Goldenrod
+    'El-Craigo': '#2A363B'    # Orchid
+}
+
+def plot_losing_streaks(df):
+    fig = px.bar(
+        df,
+        x='streak_length',
+        y='streak_rank',
+        orientation='h',
+        color='player',
+        text='streak_name',
+        template='plotly_white',
+        #color_discrete_map=color_palette,
+        hover_name='streak_name',
+        hover_data=['streak_start_date', 'streak_end_date', 'streak_loss']
+    )
+
+    fig.update_layout(
+        showlegend=False,
+        xaxis_title="Consecutive Losing Games",
+        yaxis_title="",
+        yaxis=dict(
+            autorange="reversed",
+            showticklabels=False
+        )  # Optional: Reverse y-axis to display the first category at the top
+    )
+    return fig
+
 
 def form_plot(df: pd.DataFrame):
     fig = px.line(
@@ -8,7 +41,9 @@ def form_plot(df: pd.DataFrame):
         y='all_time_return',
         x='game_overall',
         color='player',
-        markers=True
+        markers=True,
+        template='plotly_white',
+        #color_discrete_map=color_palette,
     )
 
     fig.update_layout(
