@@ -3,18 +3,11 @@ import numpy as np
 
 pd.options.mode.chained_assignment = None
 
-
-def load_raw(path: str) -> pd.DataFrame:
-    data = pd.read_csv(path)
-    data['game_date'] = pd.to_datetime(data['game_date'], dayfirst=True).dt.date.astype(str)
-    return data.sort_values('game_overall', ascending=False)
+# data['game_date'] = pd.to_datetime(data['game_date'], dayfirst=True).dt.date.astype(str)
 
 
-def load_data(path: str) -> pd.DataFrame:
-    data = pd.read_csv(path)
-    data['game_date'] = pd.to_datetime(data['game_date'], dayfirst=True)
-
-    df = pd.melt(data, id_vars=data.columns[0:7], value_vars=data.columns[7:], var_name='player', value_name='rank')
+def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
+    df = pd.melt(input_df, id_vars=input_df.columns[0:7], value_vars=input_df.columns[7:], var_name='player', value_name='rank')
 
     df = df.loc[df['rank'] > 0,].reset_index(drop=True)
 
@@ -22,11 +15,6 @@ def load_data(path: str) -> pd.DataFrame:
     df['winnings'] = df.groupby('game_overall')['stake'].transform('sum') * df['is_winner']
     df['is_last_game'] = df.groupby('player')['game_overall'].transform('max') == df['game_overall']
 
-    return df
-
-
-def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
-    df = input_df
     # cumulative sum of wins by player
     df['win_count'] = df.groupby('player')['is_winner'].cumsum()
     df['game_players'] = df.groupby('game_overall')['player'].transform('count')
@@ -72,8 +60,8 @@ def get_losing_streaks(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
     losing_streaks['streak_loss'] = losing_streaks['streak_loss'].apply(lambda x: f'${x:,.0f}')
 
     # convert to date from datetime
-    losing_streaks['streak_end_date'] = losing_streaks['streak_end_date'].dt.date.astype(str)
-    losing_streaks['streak_start_date'] = losing_streaks['streak_start_date'].dt.date.astype(str)
+    #losing_streaks['streak_end_date'] = losing_streaks['streak_end_date'].dt.date.astype(str)
+    #losing_streaks['streak_start_date'] = losing_streaks['streak_start_date'].dt.date.astype(str)
 
     losing_streaks['streak_length'] = losing_streaks['streak_length'] - 1
     losing_streaks = losing_streaks.drop('win_count', axis=1)
@@ -143,7 +131,7 @@ def get_player_summary(input_df: pd.DataFrame) -> pd.DataFrame:
     last_wins = input_df.loc[input_df['is_winner'] == 1].groupby('player')['game_date'].max().reset_index().rename(
         columns={'game_date': 'last_win_date'})
 
-    last_wins['last_win_date'] = last_wins['last_win_date'].dt.date.astype(str)
+    #last_wins['last_win_date'] = last_wins['last_win_date'].dt.date.astype(str)
 
     summary['win_rate'] = np.round(summary['wins'] / summary['played'], 2)
     summary['return_rate'] = np.round(summary['winnings'] / summary['costs'], 2).apply(lambda x: f'${x:,.2f}')

@@ -2,3 +2,5 @@ shiny
 pandas
 plotly
 shinyswatch
+pyodbc
+azure-identity
