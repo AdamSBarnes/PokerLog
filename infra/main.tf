@@ -46,7 +46,7 @@ resource "azurerm_linux_web_app" "app" {
     application_stack {
       python_version = "3.10"
     }
-    app_command_line = "shiny run app.py --port 8000"
+    app_command_line = "shiny run app.py --host 0.0.0.0 --port 8000"
     always_on        = false  # Cannot be enabled on the Free tier
   }
 
