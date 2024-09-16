@@ -51,6 +51,10 @@ resource "azurerm_linux_web_app" "app" {
   }
 
   https_only = true
+
+  identity {
+    type = "SystemAssigned"
+  }
 }
 
 resource "random_password" "pass" {

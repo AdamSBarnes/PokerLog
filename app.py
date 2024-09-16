@@ -52,15 +52,15 @@ app_ui = ui.page_sidebar(
                 )
             )
         ),
-        ui.nav_panel(
-            "Head to Head",
-            ui.layout_columns(
-                ui.card(
-                    ui.output_ui("p1_pick"),
-                    ui.output_ui("p2_pick")
-                )
-            ),
-        ),
+        # ui.nav_panel(
+        #     "Head to Head",
+        #     ui.layout_columns(
+        #         ui.card(
+        #             ui.output_ui("p1_pick"),
+        #             ui.output_ui("p2_pick")
+        #         )
+        #     ),
+        # ),
         ui.nav_panel(
             "Game History",
             ui.output_data_frame("raw_result_output")

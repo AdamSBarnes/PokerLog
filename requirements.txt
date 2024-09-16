@@ -1,6 +1,7 @@
 shiny
 pandas
 plotly
-shinyswatch
+shinywidgets
 pyodbc
 azure-identity
+shinywidgets
