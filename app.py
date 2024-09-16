@@ -132,7 +132,10 @@ def server(input, output, session):
     @output
     @render.data_frame
     def raw_result_output():
-        return game_data.loc[game_data['season'].isin([int(i) for i in input.seasons()])]
+        df =  game_data.loc[game_data['season'].isin([int(i) for i in input.seasons()])]
+        df['game_date'] = df['game_date'].astype('str')
+        df = df.sort_values('game_overall', ascending=False)
+        return df
 
 
 

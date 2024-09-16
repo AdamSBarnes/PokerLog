@@ -3,6 +3,15 @@ data "azurerm_client_config" "current" {}
 data "azuread_user" "current_user" {
   object_id = data.azurerm_client_config.current.object_id
 }
+
+resource "azuread_application" "app" {
+  display_name = "Suited Pockets"
+}
+
+resource "azuread_service_principal" "sp" {
+  application_id = azuread_application.app.application_id
+}
+
 resource "azurerm_resource_group" "rg" {
   name     = "poker-stats"
   location = var.region
@@ -76,3 +85,4 @@ output "sql_password" {
   value     = random_password.pass.result
   sensitive = true
 }
+

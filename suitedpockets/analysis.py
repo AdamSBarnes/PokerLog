@@ -60,8 +60,8 @@ def get_losing_streaks(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
     losing_streaks['streak_loss'] = losing_streaks['streak_loss'].apply(lambda x: f'${x:,.0f}')
 
     # convert to date from datetime
-    #losing_streaks['streak_end_date'] = losing_streaks['streak_end_date'].dt.date.astype(str)
-    #losing_streaks['streak_start_date'] = losing_streaks['streak_start_date'].dt.date.astype(str)
+    losing_streaks['streak_end_date'] = losing_streaks['streak_end_date'].astype(str)
+    losing_streaks['streak_start_date'] = losing_streaks['streak_start_date'].astype(str)
 
     losing_streaks['streak_length'] = losing_streaks['streak_length'] - 1
     losing_streaks = losing_streaks.drop('win_count', axis=1)
@@ -131,7 +131,7 @@ def get_player_summary(input_df: pd.DataFrame) -> pd.DataFrame:
     last_wins = input_df.loc[input_df['is_winner'] == 1].groupby('player')['game_date'].max().reset_index().rename(
         columns={'game_date': 'last_win_date'})
 
-    #last_wins['last_win_date'] = last_wins['last_win_date'].dt.date.astype(str)
+    last_wins['last_win_date'] = last_wins['last_win_date'].astype(str)
 
     summary['win_rate'] = np.round(summary['wins'] / summary['played'], 2)
     summary['return_rate'] = np.round(summary['winnings'] / summary['costs'], 2).apply(lambda x: f'${x:,.2f}')
