@@ -21,6 +21,9 @@ resource "azurerm_app_service_plan" "asp" {
   name                = "service-plan"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
+  kind                = "Linux"
+  reserved            = true
+
   sku {
     size = "F1"
     tier = "Free"
@@ -33,15 +36,18 @@ resource "azurerm_linux_web_app" "app" {
   location            = azurerm_resource_group.rg.location
   service_plan_id     = azurerm_app_service_plan.asp.id
 
-  site_config {
-    always_on = false  # Cannot be enabled on the Free tier
+  app_settings = {
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
+    "WEBSITES_PORT"                  = "8000"
+    "DB_SERVER"                      = azurerm_mssql_server.sql.fully_qualified_domain_name
   }
 
-  app_settings = {
-    "WEBSITE_STACK"                  = "python"
-    "PYTHON_VERSION"                 = "3.10"
-    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
-    "DB_SERVER"                      = azurerm_mssql_server.sql.fully_qualified_domain_name
+  site_config {
+    application_stack {
+      python_version = "3.10"
+    }
+    app_command_line = "shiny run app.py --port 8000"
+    always_on        = false  # Cannot be enabled on the Free tier
   }
 
   https_only = true
