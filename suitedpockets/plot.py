@@ -20,7 +20,7 @@ def plot_losing_streaks(df):
         template='plotly_white',
         #color_discrete_map=color_palette,
         hover_name='streak_name',
-        hover_data=['streak_start_date', 'streak_end_date', 'streak_loss']
+        hover_data=['streak_start_game', 'streak_end_game', 'streak_loss']
     )
 
     fig.update_layout(

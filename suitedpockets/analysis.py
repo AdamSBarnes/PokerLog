@@ -1,13 +1,16 @@
 import pandas as pd
 import numpy as np
+import string
 
 pd.options.mode.chained_assignment = None
+
 
 # data['game_date'] = pd.to_datetime(data['game_date'], dayfirst=True).dt.date.astype(str)
 
 
 def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
-    df = pd.melt(input_df, id_vars=input_df.columns[0:7], value_vars=input_df.columns[7:], var_name='player', value_name='rank')
+    df = pd.melt(input_df, id_vars=input_df.columns[0:7], value_vars=input_df.columns[7:], var_name='player',
+                 value_name='rank')
 
     df = df.loc[df['rank'] > 0,].reset_index(drop=True)
 
@@ -25,7 +28,8 @@ def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
 
     df['all_time_return'] = np.where(
         df['all_time_games_played'] < 5,
-        np.nan,
+        # np.nan,
+        np.round(df['all_time_winnings'] / df['all_time_costs'], 2),
         np.round(df['all_time_winnings'] / df['all_time_costs'], 2)
     )
 
@@ -41,30 +45,34 @@ def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
     df['is_heads_up'] = np.where(np.logical_and(df['is_placings'] == 1, df['rank'] <= 2), 1, 0)
     df['is_heads_up_win'] = np.where(np.logical_and(df['is_placings'] == 1, df['rank'] == 1), 1, 0)
 
-    df['is_first_out'] = np.where(np.logical_and(df['is_placings'] == 1, df['rank'] == df['game_players']),1,0)
+    df['is_first_out'] = np.where(np.logical_and(df['is_placings'] == 1, df['rank'] == df['game_players']), 1, 0)
 
     return df
 
 
-def get_losing_streaks(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
+def get_losing_streaks(df: pd.DataFrame, n: int = 20, filter_active: bool = False) -> pd.DataFrame:
     losing_streaks = df.groupby(['player', 'win_count']).agg(
-        streak_start_date=('game_date', 'min'),
+        # streak_start_date=('game_date', 'min'),
         streak_start_game=('game_overall', 'min'),
-        streak_end_date=('game_date', 'max'),
+        # streak_end_date=('game_date', 'max'),
         streak_end_game=('game_overall', 'max'),
         streak_length=('game_overall', 'size'),
         streak_loss=('stake', 'sum'),
+        streak_start_stake=('stake', 'first'),
         is_active=('is_last_game', 'sum')
     ).reset_index()
 
-    losing_streaks['streak_loss'] = losing_streaks['streak_loss'].apply(lambda x: f'${x:,.0f}')
+    losing_streaks['streak_loss'] = (losing_streaks['streak_loss'] - losing_streaks['streak_start_stake']).apply(
+        lambda x: f'${x:,.0f}')
 
     # convert to date from datetime
-    losing_streaks['streak_end_date'] = losing_streaks['streak_end_date'].astype(str)
-    losing_streaks['streak_start_date'] = losing_streaks['streak_start_date'].astype(str)
+    # losing_streaks['streak_end_date'] = losing_streaks['streak_end_date'].astype(str)
+    # losing_streaks['streak_start_date'] = losing_streaks['streak_start_date'].astype(str)
 
+    # corrections for starting val here not being correct
+    losing_streaks['streak_start_game'] = losing_streaks['streak_start_game'] + 1
     losing_streaks['streak_length'] = losing_streaks['streak_length'] - 1
-    losing_streaks = losing_streaks.drop('win_count', axis=1)
+    losing_streaks = losing_streaks.drop(['win_count', 'streak_start_stake'], axis=1)
 
     losing_streaks = losing_streaks.loc[losing_streaks['streak_length'] > 0]
 
@@ -72,6 +80,9 @@ def get_losing_streaks(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
     losing_streaks['streak_rank'] = losing_streaks.index + 1
     losing_streaks['streak_name'] = losing_streaks['player'] + ': ' + losing_streaks['streak_length'].astype(
         str) + ' games'
+
+    if filter_active:
+        losing_streaks = losing_streaks.loc[losing_streaks['is_active'] == 1]
 
     return losing_streaks
 
@@ -146,8 +157,11 @@ def get_player_summary(input_df: pd.DataFrame) -> pd.DataFrame:
                                                                                                       ascending=False)
     summary = summary.merge(last_wins, on='player', how='left').reset_index(drop=False)
     summary = summary[
-        ['player', 'costs', 'winnings', 'net_position', 'wins', 'wins_ten', 'win_rate', 'return_rate', 'last_win_date',
+        ['player', 'played', 'costs', 'winnings', 'net_position', 'wins', 'wins_ten', 'win_rate', 'return_rate',
+         'last_win_date',
          'heads_up_conversion_rate', 'first_out_rate']
-    ]
+    ].set_index('player').transpose().reset_index(drop=False).rename(columns={'index': 'Statistic'})
 
-    return summary.set_index('player').transpose().reset_index(drop=False).rename(columns={'index': 'statistic'})
+    summary['Statistic'] = summary['Statistic'].apply(lambda x: string.capwords(x.replace("_", " ")))
+
+    return summary

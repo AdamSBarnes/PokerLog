@@ -11,7 +11,7 @@ connection_string = (
     f"DRIVER={{ODBC Driver 17 for SQL Server}};"
     f"SERVER={SERVER};"
     f"DATABASE=poker;"
-    f"Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30"
+    f"Encrypt=yes;TrustServerCertificate=no;Connection Timeout=60"
 )
 
 def get_conn(conn_str: str) -> pyodbc.Connection:
