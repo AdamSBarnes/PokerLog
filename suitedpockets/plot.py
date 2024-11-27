@@ -6,7 +6,8 @@ color_palette = {
     'Cedric': '#FECEAB',   # Coral
     'Dale-O': '#FF847C',   # Lime Green
     'Nik': '#E84A5F',   # Goldenrod
-    'El-Craigo': '#2A363B'    # Orchid
+    'El-Craigo': '#2A363B',
+    'Nut': '#D8A273'# Orchid
 }
 
 def plot_losing_streaks(df):
