@@ -17,9 +17,9 @@ app_ui = ui.page_sidebar(
         ui.input_selectize(
             "seasons",
             "Select Season:",
-            {"1": "Season 1 (2023)", "2": "Season 2 (2024)"},
+            {"1": "Season 1 (2023)", "2": "Season 2 (2024)", "3": "Season 3 (2025)"},
             multiple=True,
-            selected=["1", "2"]
+            selected=["1", "2", "3"]
         ),
         ui.br(),
         bg="#013356",
