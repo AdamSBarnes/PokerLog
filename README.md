@@ -104,13 +104,15 @@ curl -L https://fly.io/install.sh | sh
 fly auth login
 
 # Create the app (run once from the project root)
-fly apps create pokerlog
+fly apps create suitedpockets
 
 # Create a 1 GB persistent volume for the SQLite database
-fly volumes create pokerlog_data --region syd --size 1
+fly volumes create suitedpockets_data --region syd --size 1
 
-# Generate & set secrets (encrypted at rest, injected as env vars)
-./scripts/setup-secrets.sh
+# Set secrets (these are encrypted, never stored in config)
+fly secrets set \
+  POKERLOG_ADMIN_PASSWORD="your-strong-password" \
+  POKERLOG_JWT_SECRET="$(openssl rand -hex 32)"
 
 # Deploy
 fly deploy
@@ -154,7 +156,7 @@ fly ssh sftp get /data/poker.sqlite ./data/poker.sqlite
    - Build command: `npm ci && npm run build`
    - Publish directory: `frontend/dist`
 3. Add the environment variable in the Netlify dashboard:
-   - `VITE_API_BASE` = `https://pokerlog.fly.dev` (your Fly app URL)
+   - `VITE_API_BASE` = `https://suitedpockets.fly.dev` (your Fly app URL)
 
 Pushes to `main` auto-deploy via GitHub Actions or Netlify's built-in CI.
 
@@ -175,7 +177,7 @@ Three workflows:
 | `FLY_API_TOKEN` | Secret | `fly tokens create deploy -x 999999h` |
 | `NETLIFY_AUTH_TOKEN` | Secret | Netlify personal access token |
 | `NETLIFY_SITE_ID` | Secret | Netlify site API ID |
-| `VITE_API_BASE` | Variable | Backend URL, e.g. `https://pokerlog.fly.dev` |
+| `VITE_API_BASE` | Variable | Backend URL, e.g. `https://suitedpockets.fly.dev` |
 
 ### 5. CORS
 

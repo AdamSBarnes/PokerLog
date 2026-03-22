@@ -8,7 +8,7 @@
 #
 set -euo pipefail
 
-APP="${FLY_APP:-pokerlog}"
+APP="${FLY_APP:-suitedpockets}"
 
 echo "==> Generating secrets for Fly app: $APP"
 
@@ -47,4 +47,5 @@ echo ""
 echo "✓ All secrets set on '$APP'."
 echo "  Admin password : ${ADMIN_PW}"
 echo "  JWT secret     : (set — not displayed)"
+
 
