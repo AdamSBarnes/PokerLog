@@ -1,7 +1,4 @@
-shiny
+fastapi
+uvicorn[standard]
 pandas
 plotly
-shinywidgets
-pyodbc
-azure-identity
-shinywidgets

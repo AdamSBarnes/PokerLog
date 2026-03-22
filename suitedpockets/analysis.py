@@ -46,6 +46,7 @@ def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
     df['is_heads_up_win'] = np.where(np.logical_and(df['is_placings'] == 1, df['rank'] == 1), 1, 0)
 
     df['is_first_out'] = np.where(np.logical_and(df['is_placings'] == 1, df['rank'] == df['game_players']), 1, 0)
+    df['is_runner_up'] = np.where(np.logical_and(df['is_placings'] == 1, df['rank'] == 2), 1, 0)
 
     return df
 
@@ -129,13 +130,17 @@ def get_player_summary(input_df: pd.DataFrame) -> pd.DataFrame:
         heads_up=('is_heads_up', 'sum'),
         heads_up_win=('is_heads_up_win', 'sum'),
         placing_games=('is_placings', 'sum'),
-        first_out=('is_first_out', 'sum')
+        first_out=('is_first_out', 'sum'),
+        runner_up=('is_runner_up', 'sum')
     )
 
     summary['heads_up_conversion_rate'] = (summary['heads_up_win'] / summary['heads_up']).apply(
         lambda x: f'{x * 100:.0f}%')
 
     summary['first_out_rate'] = (summary['first_out'] / summary['placing_games']).apply(
+        lambda x: f'{x * 100:.0f}%')
+
+    summary['runner_up_rate'] = (summary['runner_up'] / summary['placing_games']).apply(
         lambda x: f'{x * 100:.0f}%')
 
     # days since win
@@ -159,7 +164,7 @@ def get_player_summary(input_df: pd.DataFrame) -> pd.DataFrame:
     summary = summary[
         ['player', 'played', 'costs', 'winnings', 'net_position', 'wins', 'wins_ten', 'win_rate', 'return_rate',
          'last_win_date',
-         'heads_up_conversion_rate', 'first_out_rate']
+         'heads_up_conversion_rate', 'runner_up_rate', 'first_out_rate']
     ].set_index('player').transpose().reset_index(drop=False).rename(columns={'index': 'Statistic'})
 
     summary['Statistic'] = summary['Statistic'].apply(lambda x: string.capwords(x.replace("_", " ")))
