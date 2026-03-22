@@ -5,6 +5,13 @@
   command = "npm ci && npm run build"
   publish = "dist"
 
+# Proxy API calls to the Fly.io backend (avoids CORS issues)
+[[redirects]]
+  from = "/api/*"
+  to = "https://suitedpockets.fly.dev/api/:splat"
+  status = 200
+  force = true
+
 # SPA: redirect all routes to index.html so client-side routing works
 [[redirects]]
   from = "/*"
@@ -13,6 +20,6 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  VITE_API_BASE = "https://suitedpockets.fly.dev"
+  VITE_API_BASE = ""
 
 
