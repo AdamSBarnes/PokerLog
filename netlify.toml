@@ -3,7 +3,7 @@
 [build]
   base = "frontend/"
   command = "npm ci && npm run build"
-  publish = "frontend/dist"
+  publish = "dist"
 
 # SPA: redirect all routes to index.html so client-side routing works
 [[redirects]]
@@ -13,4 +13,5 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
 
