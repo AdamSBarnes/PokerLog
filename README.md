@@ -109,13 +109,19 @@ fly apps create pokerlog
 # Create a 1 GB persistent volume for the SQLite database
 fly volumes create pokerlog_data --region syd --size 1
 
-# Set secrets (these are encrypted, never stored in config)
-fly secrets set \
-  POKERLOG_ADMIN_PASSWORD="your-strong-password" \
-  POKERLOG_JWT_SECRET="$(openssl rand -hex 32)"
+# Generate & set secrets (encrypted at rest, injected as env vars)
+./scripts/setup-secrets.sh
 
 # Deploy
 fly deploy
+```
+
+You can also generate secrets from CI — go to **Actions → Setup / Rotate Secrets → Run workflow** in your GitHub repo. This auto-generates the JWT secret and optionally the admin password, then pushes them to Fly.
+
+To rotate just the JWT secret later:
+
+```bash
+./scripts/setup-secrets.sh --rotate-jwt
 ```
 
 #### How it works
@@ -154,12 +160,13 @@ Pushes to `main` auto-deploy via GitHub Actions or Netlify's built-in CI.
 
 ### 4. CI/CD — GitHub Actions
 
-Two workflows fire on push to `main`:
+Three workflows:
 
-| Workflow | Trigger paths | What it does |
-|----------|---------------|-------------|
-| `deploy-backend.yml` | `backend/`, `suitedpockets/`, `Dockerfile`, … | Builds & deploys to Fly.io |
-| `deploy-frontend.yml` | `frontend/`, `netlify.toml` | Builds & deploys to Netlify |
+| Workflow | Trigger | What it does |
+|----------|---------|-------------|
+| `deploy-backend.yml` | Push to `main` (backend paths) | Builds & deploys to Fly.io |
+| `deploy-frontend.yml` | Push to `main` (frontend paths) | Builds & deploys to Netlify |
+| `setup-secrets.yml` | Manual (Actions → Run workflow) | Generates & pushes secrets to Fly.io |
 
 #### Required GitHub secrets / variables
 
