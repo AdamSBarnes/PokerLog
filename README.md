@@ -15,6 +15,7 @@ React + FastAPI poker game tracker with normalized SQLite database, JWT-protecte
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+export POKERLOG_ADMIN_PASSWORD=admin POKERLOG_JWT_SECRET=dev-secret
 python -m backend.smoketest
 uvicorn backend.app:app --reload
 ```

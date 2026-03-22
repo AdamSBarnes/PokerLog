@@ -215,6 +215,10 @@ def _ensure_seed_data(conn: sqlite3.Connection) -> None:
     if count:
         return
 
+    # In production the DB should be uploaded, never seeded from CSV
+    if os.environ.get("POKER_SKIP_SEED"):
+        return
+
     seed_csv = _seed_csv_path()
     if not seed_csv.exists():
         return

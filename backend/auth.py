@@ -15,19 +15,24 @@ import base64
 # Config – override via environment variables
 # ---------------------------------------------------------------------------
 
-_INSECURE_DEFAULTS = {"admin", "change-me-in-production", "change-me", ""}
+def _require_env(name: str) -> str:
+    """Return env var or raise if missing. No insecure defaults."""
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(
+            f"{name} is not set. "
+            f"Run ./scripts/setup-secrets.sh or the setup-secrets GitHub Actions workflow."
+        )
+    return value
 
-ADMIN_PASSWORD = os.environ.get("POKERLOG_ADMIN_PASSWORD", "admin")
-JWT_SECRET = os.environ.get("POKERLOG_JWT_SECRET", "change-me-in-production")
+
+# In local dev you can export these yourself or use a .env file.
+# In production (Fly.io) they must be set via `fly secrets set`.
+ADMIN_PASSWORD = _require_env("POKERLOG_ADMIN_PASSWORD")
+JWT_SECRET = _require_env("POKERLOG_JWT_SECRET")
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_HOURS = int(os.environ.get("POKERLOG_JWT_EXPIRE_HOURS", "24"))
 
-# Block startup if running with default secrets outside local dev
-if os.environ.get("FLY_APP_NAME"):  # set automatically on Fly.io
-    if ADMIN_PASSWORD in _INSECURE_DEFAULTS:
-        raise RuntimeError("POKERLOG_ADMIN_PASSWORD is not set — run the setup-secrets workflow")
-    if JWT_SECRET in _INSECURE_DEFAULTS:
-        raise RuntimeError("POKERLOG_JWT_SECRET is not set — run the setup-secrets workflow")
 
 _bearer = HTTPBearer(auto_error=False)
 

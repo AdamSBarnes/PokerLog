@@ -19,6 +19,9 @@ COPY backend/ backend/
 COPY suitedpockets/ suitedpockets/
 COPY sql/ sql/
 COPY data/sample_games.csv data/sample_games.csv
+# One-time seed: copied to the persistent volume on first boot only.
+# Safe to remove this line after the first successful deploy to speed up builds.
+COPY data/poker.sqlite data/poker.sqlite.seed
 COPY start.sh /app/start.sh
 
 # Ensure data directory exists (Fly persistent volume mounts here)
@@ -30,3 +33,5 @@ ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 
 CMD ["/app/start.sh"]
+
+
