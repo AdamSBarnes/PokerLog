@@ -1,11 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Plot from "react-plotly.js";
-import { buildSeasonParam, fetchJson } from "./api.js";
+import {
+  buildSeasonParam,
+  clearToken,
+  deleteJson,
+  fetchJson,
+  isLoggedIn,
+  login,
+  postJson,
+  putJson,
+} from "./api.js";
 
 const TABS = [
   { key: "dashboard", label: "Player Summary" },
   { key: "streaks", label: "Losing Streaks" },
   { key: "history", label: "Game History" },
+  { key: "admin", label: "Admin" },
 ];
 
 const METRIC_DEFS = [
@@ -22,6 +32,8 @@ const METRIC_DEFS = [
   ["Runner Up Rate", "Rate at which player finishes second."],
   ["First Out Rate", "Rate at which player is knocked out first."],
 ];
+
+/* ─── Reusable DataTable ───────────────────────────────────── */
 
 function DataTable({ rows }) {
   if (!rows || rows.length === 0) {
@@ -152,6 +164,372 @@ function HistoryTab({ games }) {
   );
 }
 
+/* ─── Login form ────────────────────────────────────────────── */
+
+function LoginForm({ onLogin }) {
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setErr("");
+    try {
+      await login(pw);
+      onLogin();
+    } catch (ex) {
+      setErr(ex.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="card" style={{ maxWidth: 400 }}>
+      <h2>Admin Login</h2>
+      <form onSubmit={handleSubmit} className="admin-form">
+        <label>Password
+          <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} required />
+        </label>
+        {err && <p className="form-error">{err}</p>}
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? "Logging in…" : "Log In"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/* ─── Player Management ─────────────────────────────────────── */
+
+function PlayerManager({ players, onRefresh }) {
+  const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [err, setErr] = useState("");
+
+  const addPlayer = async (e) => {
+    e.preventDefault();
+    setErr("");
+    try {
+      await postJson("/api/players", { name, display_name: displayName || name });
+      setName("");
+      setDisplayName("");
+      onRefresh();
+    } catch (ex) {
+      setErr(ex.message);
+    }
+  };
+
+  const toggleActive = async (p) => {
+    try {
+      await putJson(`/api/players/${p.player_id}`, { active: p.active ? 0 : 1 });
+      onRefresh();
+    } catch (ex) {
+      setErr(ex.message);
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2>Player Management</h2>
+      <form onSubmit={addPlayer} className="admin-form inline-form">
+        <input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input placeholder="Display Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        <button type="submit" className="btn-primary">Add Player</button>
+      </form>
+      {err && <p className="form-error">{err}</p>}
+      <div className="table-wrap" style={{ marginTop: 12 }}>
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Name</th><th>Display</th><th>Active</th><th></th></tr>
+          </thead>
+          <tbody>
+            {players.map((p) => (
+              <tr key={p.player_id}>
+                <td>{p.player_id}</td>
+                <td>{p.name}</td>
+                <td>{p.display_name}</td>
+                <td>{p.active ? "✓" : "✗"}</td>
+                <td>
+                  <button className="btn-sm" onClick={() => toggleActive(p)}>
+                    {p.active ? "Deactivate" : "Activate"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Game Form (create / edit) ─────────────────────────────── */
+
+function brisbaneToday() {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "Australia/Brisbane" });
+}
+
+function GameForm({ players, onSaved, editGame, onCancelEdit, metadata }) {
+  const activePlayers = players.filter((p) => p.active);
+  const defaultSeason = metadata?.latest_season ?? "";
+  const defaultGameOverall = metadata?.next_game_overall ?? "";
+
+  const [season, setSeason] = useState(editGame?.season ?? defaultSeason);
+  const [gameDate, setGameDate] = useState(editGame?.game_date ?? brisbaneToday());
+  const [gameNumber, setGameNumber] = useState(editGame?.game_number ?? 1);
+  const [gameOverall, setGameOverall] = useState(editGame?.game_overall ?? defaultGameOverall);
+  const [stake, setStake] = useState(editGame?.stake ?? 10);
+  const [selectedPlayerIds, setSelectedPlayerIds] = useState(() => {
+    if (editGame?.results) return editGame.results.map((r) => r.player_id);
+    return [];
+  });
+  const [finishOrder, setFinishOrder] = useState(() => {
+    if (editGame?.results) {
+      const m = {};
+      editGame.results.forEach((r) => { m[r.player_id] = r.finish_position; });
+      return m;
+    }
+    return {};
+  });
+  const [err, setErr] = useState("");
+
+  // Keep defaults in sync when metadata updates (e.g. after adding a game)
+  useEffect(() => {
+    if (!editGame) {
+      setSeason(metadata?.latest_season ?? "");
+      setGameOverall(metadata?.next_game_overall ?? "");
+      setGameDate(brisbaneToday());
+    }
+  }, [metadata?.latest_season, metadata?.next_game_overall, editGame]);
+
+  const togglePlayer = (pid) => {
+    setSelectedPlayerIds((prev) => {
+      if (prev.includes(pid)) {
+        const next = prev.filter((id) => id !== pid);
+        setFinishOrder((fo) => { const c = { ...fo }; delete c[pid]; return c; });
+        return next;
+      }
+      return [...prev, pid];
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErr("");
+
+    const results = selectedPlayerIds.map((pid) => ({
+      player_id: pid,
+      finish_position: parseInt(finishOrder[pid]) || 0,
+    }));
+
+    // Derive winner from finish_position === 1
+    const winnerResult = results.find((r) => r.finish_position === 1);
+    const winnerPlayer = winnerResult ? players.find((p) => p.player_id === winnerResult.player_id) : null;
+
+    const body = {
+      season: parseInt(season),
+      game_date: gameDate,
+      game_number: parseInt(gameNumber),
+      stake: parseInt(stake),
+      winner: winnerPlayer?.name || null,
+      is_placings: 1,
+      results,
+    };
+
+    try {
+      if (editGame) {
+        await putJson(`/api/games/${editGame.game_overall}`, body);
+      } else {
+        await postJson("/api/games", body);
+      }
+      onSaved();
+      if (!editGame) {
+        // Reset form but keep season/date, game overall & game # will auto-update via metadata refresh
+        setSelectedPlayerIds([]);
+        setFinishOrder({});
+        setGameNumber(1);
+      }
+    } catch (ex) {
+      setErr(ex.message);
+    }
+  };
+
+  return (
+    <div className="card">
+      <h2>{editGame ? `Edit Game #${editGame.game_overall}` : "Add Game Result"}</h2>
+      <form onSubmit={handleSubmit} className="admin-form">
+        <div className="form-grid">
+          <label>Game Overall
+            <input type="number" value={gameOverall} readOnly={!editGame} onChange={(e) => setGameOverall(e.target.value)} required />
+          </label>
+          <label>Season
+            <input type="number" value={season} onChange={(e) => setSeason(e.target.value)} required />
+          </label>
+          <label>Date
+            <input type="date" value={gameDate} onChange={(e) => setGameDate(e.target.value)} required />
+          </label>
+          <label>Game #
+            <input type="number" value={gameNumber} onChange={(e) => setGameNumber(e.target.value)} min={1} required />
+          </label>
+          <label>Stake ($)
+            <input type="number" value={stake} onChange={(e) => setStake(e.target.value)} required />
+          </label>
+        </div>
+
+        <fieldset className="player-select-fieldset">
+          <legend>Select Players &amp; Finish Order</legend>
+          <div className="player-chips">
+            {activePlayers.map((p) => {
+              const selected = selectedPlayerIds.includes(p.player_id);
+              return (
+                <button
+                  key={p.player_id}
+                  type="button"
+                  className={`player-chip${selected ? " selected" : ""}`}
+                  onClick={() => togglePlayer(p.player_id)}
+                >
+                  {p.display_name}
+                </button>
+              );
+            })}
+          </div>
+          {selectedPlayerIds.length > 0 && (
+            <div className="finish-order-list">
+              {selectedPlayerIds.map((pid) => {
+                const p = players.find((x) => x.player_id === pid);
+                return (
+                  <div key={pid} className="finish-order-row">
+                    <span>{p?.display_name}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="Position"
+                      value={finishOrder[pid] || ""}
+                      onChange={(e) => setFinishOrder((fo) => ({ ...fo, [pid]: e.target.value }))}
+                      required
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </fieldset>
+
+        {err && <p className="form-error">{err}</p>}
+        <div className="form-actions">
+          <button type="submit" className="btn-primary">
+            {editGame ? "Update Game" : "Add Game"}
+          </button>
+          {editGame && (
+            <button type="button" className="btn-secondary" onClick={onCancelEdit}>Cancel</button>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* ─── Game list with edit/delete ────────────────────────────── */
+
+function GameList({ games, onEdit, onDeleted }) {
+  const [err, setErr] = useState("");
+
+  const handleDelete = async (id) => {
+    if (!window.confirm(`Delete game #${id}?`)) return;
+    try {
+      await deleteJson(`/api/games/${id}`);
+      onDeleted();
+    } catch (ex) {
+      setErr(ex.message);
+    }
+  };
+
+  if (!games || games.length === 0) return <p className="muted">No games.</p>;
+
+  return (
+    <div className="card">
+      <h2>Manage Games</h2>
+      {err && <p className="form-error">{err}</p>}
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Season</th><th>Date</th><th>Game</th><th>Stake</th><th>Winner</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...games].reverse().map((g) => (
+              <tr key={g.game_overall}>
+                <td>{g.game_overall}</td>
+                <td>{g.season}</td>
+                <td>{g.game_date}</td>
+                <td>{g.game_number}</td>
+                <td>${g.stake}</td>
+                <td>{g.winner}</td>
+                <td className="action-cell">
+                  <button className="btn-sm" onClick={() => onEdit(g)}>Edit</button>
+                  <button className="btn-sm btn-danger" onClick={() => handleDelete(g.game_overall)}>Del</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Admin Tab ─────────────────────────────────────────────── */
+
+function AdminTab({ games, refreshData, metadata }) {
+  const [authed, setAuthed] = useState(isLoggedIn());
+  const [players, setPlayers] = useState([]);
+  const [editGame, setEditGame] = useState(null);
+
+  const loadPlayers = useCallback(() => {
+    fetchJson("/api/players").then(setPlayers).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (authed) loadPlayers();
+  }, [authed, loadPlayers]);
+
+  const handleLogout = () => {
+    clearToken();
+    setAuthed(false);
+  };
+
+  if (!authed) {
+    return <LoginForm onLogin={() => setAuthed(true)} />;
+  }
+
+  return (
+    <div className="admin-panel">
+      <div className="admin-header">
+        <span>Logged in as admin</span>
+        <button className="btn-sm btn-secondary" onClick={handleLogout}>Logout</button>
+      </div>
+      <div className="dash-grid">
+        <GameForm
+          players={players}
+          editGame={editGame}
+          onSaved={() => { refreshData(); setEditGame(null); }}
+          onCancelEdit={() => setEditGame(null)}
+          metadata={metadata}
+        />
+        <PlayerManager players={players} onRefresh={loadPlayers} />
+      </div>
+      <GameList
+        games={games}
+        onEdit={(g) => setEditGame(g)}
+        onDeleted={refreshData}
+      />
+    </div>
+  );
+}
+
 /* ─── Main app ──────────────────────────────────────────────── */
 
 export default function App() {
@@ -164,6 +542,7 @@ export default function App() {
   const [roiSeries, setRoiSeries] = useState([]);
   const [games, setGames] = useState([]);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchJson("/api/metadata")
@@ -172,7 +551,7 @@ export default function App() {
         setSelectedSeasons(data.seasons || []);
       })
       .catch((err) => setError(err.message));
-  }, []);
+  }, [refreshKey]);
 
   const seasonParam = useMemo(
     () => buildSeasonParam(selectedSeasons),
@@ -202,7 +581,9 @@ export default function App() {
         setError("");
       })
       .catch((err) => setError(err.message));
-  }, [seasonParam, selectedSeasons.length]);
+  }, [seasonParam, selectedSeasons.length, refreshKey]);
+
+  const refreshData = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   /* ── derived plot data ────────────────── */
 
@@ -311,6 +692,7 @@ export default function App() {
             />
           )}
           {tab === "history" && <HistoryTab games={games} />}
+          {tab === "admin" && <AdminTab games={games} refreshData={refreshData} metadata={metadata} />}
         </div>
       </main>
     </div>

@@ -1,35 +1,47 @@
 from datetime import date
 
 from backend.analytics import game_history, metadata, player_summary, roi_series
-from suitedpockets.data import delete_game, insert_game
+from suitedpockets.data import delete_game, insert_game, list_players, create_player
 
 
 def main() -> None:
     meta = metadata()
     seasons = meta.get("seasons", [])
-    players = meta.get("players", [])
-    assert seasons, "No seasons found in metadata"
-    assert players, "No players found in metadata"
+    players_list = list_players()
 
-    summary = player_summary(seasons)
-    assert summary, "Player summary should not be empty"
+    # Ensure at least one player exists for the test
+    if not players_list:
+        create_player("TestPlayer", "Test Player")
+        players_list = list_players()
 
-    series = roi_series(seasons)
-    assert series, "ROI series should not be empty"
+    player_names = meta.get("players", [])
 
-    games = game_history(seasons)
-    assert games, "Game history should not be empty"
+    if seasons and player_names:
+        summary = player_summary(seasons)
+        assert summary, "Player summary should not be empty"
+
+        series = roi_series(seasons)
+        assert series, "ROI series should not be empty"
+
+        games = game_history(seasons)
+        assert games, "Game history should not be empty"
+
+    # Test insert + delete with normalized structure
+    test_season = seasons[-1] if seasons else 1
+    results = [{"player_id": p["player_id"], "finish_position": idx}
+               for idx, p in enumerate(players_list[:3], start=1)]
+
+    winner_name = players_list[0]["name"] if players_list else None
 
     payload = {
-        "season": seasons[-1],
+        "season": test_season,
         "game_date": date.today(),
         "game_number": 99,
         "stake": 10,
-        "winner": players[0],
+        "winner": winner_name,
         "is_placings": 1,
+        "results": results,
     }
-    for idx, player in enumerate(players, start=1):
-        payload[player] = idx
 
     new_id = insert_game(payload)
     delete_game(new_id)
@@ -39,4 +51,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

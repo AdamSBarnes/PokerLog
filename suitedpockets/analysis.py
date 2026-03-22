@@ -9,10 +9,11 @@ pd.options.mode.chained_assignment = None
 
 
 def process_data(input_df: pd.DataFrame) -> pd.DataFrame:
-    df = pd.melt(input_df, id_vars=input_df.columns[0:7], value_vars=input_df.columns[7:], var_name='player',
-                 value_name='rank')
-
-    df = df.loc[df['rank'] > 0,].reset_index(drop=True)
+    # Data arrives in long format: one row per player per game
+    # with columns: game_overall, season, game_date, game_number, stake,
+    #               winner, is_placings, player, rank
+    df = input_df.copy()
+    df = df.loc[df['rank'] > 0].reset_index(drop=True)
 
     df['is_winner'] = np.where(df['player'] == df['winner'], 1, 0)
     df['winnings'] = df.groupby('game_overall')['stake'].transform('sum') * df['is_winner']

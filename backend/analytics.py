@@ -3,7 +3,7 @@ from typing import Iterable
 import pandas as pd
 
 from suitedpockets.analysis import get_losing_streaks, get_player_summary, process_data
-from suitedpockets.data import get_metadata, list_games
+from suitedpockets.data import get_metadata, list_games, list_games_wide
 
 
 def _season_list(seasons: Iterable[int] | None) -> list[int] | None:
@@ -17,7 +17,7 @@ def metadata() -> dict:
 
 
 def game_history(seasons: Iterable[int] | None) -> list[dict]:
-    df = list_games(_season_list(seasons))
+    df = list_games_wide(_season_list(seasons))
     if not df.empty:
         df["game_date"] = pd.to_datetime(df["game_date"]).dt.date.astype(str)
     return df.to_dict(orient="records")
@@ -42,4 +42,3 @@ def roi_series(seasons: Iterable[int] | None) -> list[dict]:
     processed = process_data(df)
     series = processed[["game_overall", "player", "all_time_return"]]
     return series.to_dict(orient="records")
-

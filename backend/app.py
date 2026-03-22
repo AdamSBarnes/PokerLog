@@ -1,22 +1,43 @@
 from datetime import date
-from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 from backend.analytics import game_history, losing_streaks, metadata, player_summary, roi_series
-from suitedpockets.data import delete_game, insert_game, update_game
+from backend.auth import create_access_token, get_current_admin, verify_password
+from suitedpockets.data import (
+    create_player,
+    deactivate_player,
+    delete_game,
+    insert_game,
+    list_players,
+    update_game,
+    update_player,
+)
 
-app = FastAPI(title="PokerLog API", version="0.1.0")
+app = FastAPI(title="PokerLog API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Pydantic models
+# ---------------------------------------------------------------------------
+
+class LoginRequest(BaseModel):
+    password: str
+
+
+class ResultEntry(BaseModel):
+    player_id: int
+    finish_position: int
 
 
 class GameCreate(BaseModel):
@@ -24,10 +45,9 @@ class GameCreate(BaseModel):
     game_date: date
     game_number: int
     stake: int
-    winner: str
-    is_placings: int
-
-    model_config = ConfigDict(extra="allow")
+    winner: str | None = None
+    is_placings: int = 1
+    results: list[ResultEntry] = []
 
 
 class GameUpdate(BaseModel):
@@ -37,9 +57,35 @@ class GameUpdate(BaseModel):
     stake: int | None = None
     winner: str | None = None
     is_placings: int | None = None
+    results: list[ResultEntry] | None = None
 
-    model_config = ConfigDict(extra="allow")
 
+class PlayerCreate(BaseModel):
+    name: str
+    display_name: str
+
+
+class PlayerUpdate(BaseModel):
+    name: str | None = None
+    display_name: str | None = None
+    active: int | None = None
+
+
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+
+@app.post("/api/login")
+def login(body: LoginRequest) -> dict:
+    if not verify_password(body.password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    token = create_access_token()
+    return {"access_token": token, "token_type": "bearer"}
+
+
+# ---------------------------------------------------------------------------
+# Public read endpoints (no auth required)
+# ---------------------------------------------------------------------------
 
 @app.get("/api/health")
 def health() -> dict:
@@ -75,21 +121,55 @@ def get_roi_series(seasons: str | None = None) -> list[dict]:
     return roi_series(season_list)
 
 
+@app.get("/api/players")
+def get_players() -> list[dict]:
+    return list_players()
+
+
+# ---------------------------------------------------------------------------
+# Admin endpoints (auth required)
+# ---------------------------------------------------------------------------
+
 @app.post("/api/games", status_code=201)
-def create_game(payload: GameCreate) -> dict:
-    game_id = insert_game(payload.model_dump())
+def create_game(payload: GameCreate, _admin: str = Depends(get_current_admin)) -> dict:
+    data = payload.model_dump()
+    data["game_date"] = str(data["game_date"])
+    data["results"] = [r.model_dump() for r in payload.results]
+    game_id = insert_game(data)
     return {"game_overall": game_id}
 
 
 @app.put("/api/games/{game_overall}", status_code=204)
-def put_game(game_overall: int, payload: GameUpdate) -> None:
-    updates: dict[str, Any] = payload.model_dump(exclude_unset=True)
+def put_game(game_overall: int, payload: GameUpdate, _admin: str = Depends(get_current_admin)) -> None:
+    updates = payload.model_dump(exclude_unset=True)
     if not updates:
         raise HTTPException(status_code=400, detail="No fields provided for update")
+    if "game_date" in updates and updates["game_date"] is not None:
+        updates["game_date"] = str(updates["game_date"])
+    if "results" in updates and updates["results"] is not None:
+        updates["results"] = [r.model_dump() for r in payload.results]
     update_game(game_overall, updates)
 
 
 @app.delete("/api/games/{game_overall}", status_code=204)
-def remove_game(game_overall: int) -> None:
+def remove_game(game_overall: int, _admin: str = Depends(get_current_admin)) -> None:
     delete_game(game_overall)
 
+
+@app.post("/api/players", status_code=201)
+def add_player(payload: PlayerCreate, _admin: str = Depends(get_current_admin)) -> dict:
+    player_id = create_player(payload.name, payload.display_name)
+    return {"player_id": player_id}
+
+
+@app.put("/api/players/{player_id}", status_code=204)
+def edit_player(player_id: int, payload: PlayerUpdate, _admin: str = Depends(get_current_admin)) -> None:
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+    update_player(player_id, updates)
+
+
+@app.delete("/api/players/{player_id}", status_code=204)
+def remove_player(player_id: int, _admin: str = Depends(get_current_admin)) -> None:
+    deactivate_player(player_id)

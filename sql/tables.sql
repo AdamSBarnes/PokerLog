@@ -1,36 +1,33 @@
-/*
- season,game_overall,game_date,game_number,stake,winner,is_placings,Cedric,Dale-O,Knottorious,El-Craigo,Nik
+-- Normalized PokerLog schema
+-- player:       one row per person
+-- game:         one row per poker game
+-- game_result:  one row per player per game (finish position)
 
- */
-CREATE TABLE game
-(
-    game_overall int identity
-        CONSTRAINT pk_game PRIMARY KEY,
-    season       int,
-    game_date    date,
-    game_number  int,
-    stake        int,
-    winner       varchar(64),
-    is_placings  int,
-    cedric       int,
-    daleo        int,
-    knottorious  int,
-    elcraigo     int,
-    nik          int
-)
-GO
+CREATE TABLE IF NOT EXISTS player (
+    player_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    name         TEXT    NOT NULL UNIQUE,
+    display_name TEXT    NOT NULL,
+    active       INTEGER NOT NULL DEFAULT 1
+);
 
-CREATE VIEW vw_game as
-SELECT game_overall,
-       season,
-       game_date,
-       game_number,
-       stake,
-       winner,
-       is_placings,
-       cedric      as [Cedric],
-       daleo       as [Dale-O],
-       knottorious as [Knottorious],
-       elcraigo    as [El-Craigo],
-       nik         as [Nik]
-FROM game
+CREATE TABLE IF NOT EXISTS game (
+    game_overall INTEGER PRIMARY KEY,
+    season       INTEGER NOT NULL,
+    game_date    TEXT    NOT NULL,
+    game_number  INTEGER NOT NULL,
+    stake        INTEGER NOT NULL,
+    winner       TEXT,
+    is_placings  INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS game_result (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    game_overall    INTEGER NOT NULL REFERENCES game(game_overall) ON DELETE CASCADE,
+    player_id       INTEGER NOT NULL REFERENCES player(player_id),
+    finish_position INTEGER NOT NULL,
+    UNIQUE(game_overall, player_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_game_result_game ON game_result(game_overall);
+CREATE INDEX IF NOT EXISTS idx_game_result_player ON game_result(player_id);
+CREATE INDEX IF NOT EXISTS idx_game_season ON game(season);
