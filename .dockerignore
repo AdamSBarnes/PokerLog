@@ -1,0 +1,17 @@
+# ── .dockerignore ──
+.venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+frontend/
+infra/
+www/
+*.md
+.env
+.env.*
+data/poker.sqlite
+data/poker.sqlite-shm
+data/poker.sqlite-wal
+data/poker.sqlite.bak
+

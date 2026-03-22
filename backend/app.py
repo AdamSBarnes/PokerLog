@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -18,9 +19,14 @@ from suitedpockets.data import (
 
 app = FastAPI(title="PokerLog API", version="0.2.0")
 
+# In production set POKERLOG_CORS_ORIGINS to your frontend URL, e.g.
+# "https://your-site.netlify.app"  (comma-separated for multiple origins)
+_raw_origins = os.environ.get("POKERLOG_CORS_ORIGINS", "*")
+_allowed_origins = [o.strip() for o in _raw_origins.split(",")] if _raw_origins != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

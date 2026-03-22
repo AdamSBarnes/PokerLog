@@ -1,0 +1,16 @@
+# Netlify build configuration – PokerLog frontend
+
+[build]
+  base = "frontend/"
+  command = "npm ci && npm run build"
+  publish = "frontend/dist"
+
+# SPA: redirect all routes to index.html so client-side routing works
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.environment]
+  NODE_VERSION = "20"
+

@@ -78,3 +78,105 @@ python -m backend.load_csv ~/game_data.csv
 ```
 
 Use `--append` to add rows without truncating the table.
+
+---
+
+## Deployment
+
+The production stack runs on **free tiers**:
+
+| Component | Service | Cost |
+|-----------|---------|------|
+| Backend   | Fly.io (shared-cpu-1x, 256 MB) | $0/mo |
+| Database  | SQLite on Fly.io persistent volume | $0/mo |
+| Frontend  | Netlify | $0/mo |
+| CI/CD     | GitHub Actions | $0/mo |
+
+### 1. Backend — Fly.io
+
+#### First-time setup
+
+```bash
+# Install the Fly CLI
+curl -L https://fly.io/install.sh | sh
+
+# Authenticate
+fly auth login
+
+# Create the app (run once from the project root)
+fly apps create pokerlog
+
+# Create a 1 GB persistent volume for the SQLite database
+fly volumes create pokerlog_data --region syd --size 1
+
+# Set secrets (these are encrypted, never stored in config)
+fly secrets set \
+  POKERLOG_ADMIN_PASSWORD="your-strong-password" \
+  POKERLOG_JWT_SECRET="$(openssl rand -hex 32)"
+
+# Deploy
+fly deploy
+```
+
+#### How it works
+
+- `Dockerfile` builds a slim Python image and runs uvicorn.
+- The `/data` directory is a Fly persistent volume so the SQLite database
+  survives restarts and re-deploys.
+- `fly.toml` configures auto-stop/auto-start so the machine sleeps when idle
+  (no cost while sleeping).
+
+#### Manual deploy
+
+```bash
+fly deploy
+```
+
+### 2. Database backup
+
+Keep a local copy of the SQLite database. You can pull it from Fly at any time:
+
+```bash
+fly ssh sftp get /data/poker.sqlite ./data/poker.sqlite
+```
+
+### 3. Frontend — Netlify
+
+1. Connect the GitHub repo to Netlify (or use the CLI).
+2. Set the **build settings** (also in `netlify.toml`):
+   - Base directory: `frontend/`
+   - Build command: `npm ci && npm run build`
+   - Publish directory: `frontend/dist`
+3. Add the environment variable in the Netlify dashboard:
+   - `VITE_API_BASE` = `https://pokerlog.fly.dev` (your Fly app URL)
+
+Pushes to `main` auto-deploy via GitHub Actions or Netlify's built-in CI.
+
+### 4. CI/CD — GitHub Actions
+
+Two workflows fire on push to `main`:
+
+| Workflow | Trigger paths | What it does |
+|----------|---------------|-------------|
+| `deploy-backend.yml` | `backend/`, `suitedpockets/`, `Dockerfile`, … | Builds & deploys to Fly.io |
+| `deploy-frontend.yml` | `frontend/`, `netlify.toml` | Builds & deploys to Netlify |
+
+#### Required GitHub secrets / variables
+
+| Name | Where | Purpose |
+|------|-------|---------|
+| `FLY_API_TOKEN` | Secret | `fly tokens create deploy -x 999999h` |
+| `NETLIFY_AUTH_TOKEN` | Secret | Netlify personal access token |
+| `NETLIFY_SITE_ID` | Secret | Netlify site API ID |
+| `VITE_API_BASE` | Variable | Backend URL, e.g. `https://pokerlog.fly.dev` |
+
+### 5. CORS
+
+In production, set the `POKERLOG_CORS_ORIGINS` Fly secret to your Netlify
+domain to lock down cross-origin requests:
+
+```bash
+fly secrets set POKERLOG_CORS_ORIGINS="https://your-site.netlify.app"
+```
+
+

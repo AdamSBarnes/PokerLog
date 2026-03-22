@@ -1,0 +1,27 @@
+# Fly.io configuration – PokerLog backend
+# Docs: https://fly.io/docs/reference/configuration/
+
+app = "pokerlog"
+primary_region = "syd"          # Sydney – closest to australiaeast
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  POKER_SQLITE_PATH = "/data/poker.sqlite"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"   # Scale to zero when idle (saves money)
+  auto_start_machines = true    # Restart on incoming request
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[mounts]
+  source = "pokerlog_data"
+  destination = "/data"
+
