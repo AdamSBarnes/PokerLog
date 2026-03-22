@@ -2,7 +2,7 @@ name: Deploy Frontend (Netlify)
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "frontend/**"
       - "netlify.toml"

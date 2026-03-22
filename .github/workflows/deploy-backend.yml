@@ -2,7 +2,7 @@ name: Deploy Backend (Fly.io)
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "backend/**"
       - "suitedpockets/**"
