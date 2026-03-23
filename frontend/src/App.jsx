@@ -5,6 +5,7 @@ import {
   clearToken,
   deleteJson,
   fetchJson,
+  fetchJsonAuth,
   isLoggedIn,
   login,
   postJson,
@@ -13,6 +14,7 @@ import {
 
 const TABS = [
   { key: "dashboard", label: "Player Summary" },
+  { key: "odds", label: "Next Game Odds" },
   { key: "streaks", label: "Losing Streaks" },
   { key: "history", label: "Game History" },
   { key: "admin", label: "Admin" },
@@ -160,6 +162,94 @@ function HistoryTab({ games }) {
     <div className="card full-width">
       <h2>Game History</h2>
       <DataTable rows={games} />
+    </div>
+  );
+}
+
+/* ─── Odds / Predictions Tab ────────────────────────────────── */
+
+function formatPct(val) {
+  return `${(val * 100).toFixed(1)}%`;
+}
+
+function oddsClass(odds) {
+  if (odds <= 3.0) return "odds-fav";
+  if (odds <= 6.0) return "odds-mid";
+  return "odds-long";
+}
+
+function OddsTab() {
+  const [predictions, setPredictions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    fetchJson("/api/predictions")
+      .then((data) => {
+        setPredictions(data);
+        setErr("");
+      })
+      .catch((e) => setErr(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <p className="muted">Loading predictions…</p>;
+  if (err) return <div className="error">{err}</div>;
+  if (!predictions.length) return <p className="muted">Not enough data to generate odds.</p>;
+
+  const favourite = predictions[0];
+
+  return (
+    <div className="odds-container">
+      <div className="odds-header-card">
+        <div className="odds-event-badge">NEXT GAME</div>
+        <h2 className="odds-title">Winner Market</h2>
+        <p className="odds-subtitle">
+          Odds derived from historical performance, recent form &amp; head-to-head stats.
+          <br />
+        </p>
+      </div>
+
+      {/* Favourite callout */}
+      <div className="odds-favourite-card">
+        <span className="odds-fav-label">★ FAVOURITE</span>
+        <span className="odds-fav-name">{favourite.player}</span>
+        <span className="odds-fav-odds">${favourite.decimal_odds.toFixed(2)}</span>
+      </div>
+
+      {/* Odds grid */}
+      <div className="odds-grid">
+        {predictions.map((p, i) => (
+          <div key={p.player} className="odds-card">
+            <div className="odds-card-rank">#{i + 1}</div>
+            <div className="odds-card-player">{p.player}</div>
+            <div className={`odds-card-price ${oddsClass(p.decimal_odds)}`}>
+              ${p.decimal_odds.toFixed(2)}
+            </div>
+            <div className="odds-card-prob">{formatPct(p.probability)} chance of winning</div>
+
+            <div className="odds-card-stats">
+              <div className="odds-stat">
+                <span className="odds-stat-label">Win Rate</span>
+                <span className="odds-stat-value">{formatPct(p.overall_win_rate)}</span>
+              </div>
+              <div className="odds-stat">
+                <span className="odds-stat-label">Form (EWMA)</span>
+                <span className="odds-stat-value">{formatPct(p.ewma_win_rate)}</span>
+              </div>
+              <div className="odds-stat">
+                <span className="odds-stat-label">Last {10}</span>
+                <span className="odds-stat-value">{formatPct(p.recent_form)}</span>
+              </div>
+              <div className="odds-stat">
+                <span className="odds-stat-label">Games</span>
+                <span className="odds-stat-value">{p.games_played}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -685,6 +775,7 @@ export default function App() {
           {tab === "dashboard" && (
             <DashboardTab summary={summary} roiPlotData={roiPlotData} />
           )}
+          {tab === "odds" && <OddsTab />}
           {tab === "streaks" && (
             <StreaksTab
               streakPlotData={streakPlotData}

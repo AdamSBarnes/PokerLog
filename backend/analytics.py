@@ -3,7 +3,8 @@ from typing import Iterable
 import pandas as pd
 
 from suitedpockets.analysis import get_losing_streaks, get_player_summary, process_data
-from suitedpockets.data import get_metadata, list_games, list_games_wide
+from suitedpockets.data import get_metadata, list_games, list_games_wide, list_players
+from suitedpockets.prediction import predict_next_game
 
 
 def _season_list(seasons: Iterable[int] | None) -> list[int] | None:
@@ -42,3 +43,12 @@ def roi_series(seasons: Iterable[int] | None) -> list[dict]:
     processed = process_data(df)
     series = processed[["game_overall", "player", "all_time_return"]]
     return series.to_dict(orient="records")
+
+
+def predictions() -> list[dict]:
+    """Predict win probabilities for the next game using all historical data."""
+    df = list_games(None)  # all seasons
+    active = [p["name"] for p in list_players() if p.get("active")]
+    return predict_next_game(df, active_players=active)
+
+

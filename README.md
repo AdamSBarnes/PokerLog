@@ -50,6 +50,7 @@ To point the frontend at another API URL, set `VITE_API_BASE` before running Vit
 - `GET  /api/losing-streaks?seasons=1,2&n=20&active=false`
 - `GET  /api/roi-series?seasons=1,2`
 - `GET  /api/players`
+- `GET  /api/predictions` — next-game win probabilities &amp; Australian decimal odds
 
 ### Auth
 - `POST /api/login` — `{ "password": "..." }` → returns JWT token

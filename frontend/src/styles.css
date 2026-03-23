@@ -492,3 +492,211 @@ tr:hover td {
   gap: 4px;
 }
 
+/* ─── Odds / Predictions (betting-app style) ─────────────── */
+
+.odds-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 900px;
+}
+
+.odds-header-card {
+  background: linear-gradient(135deg, #013356 0%, #01527a 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.odds-header-card::after {
+  content: "";
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 50%;
+}
+
+.odds-event-badge {
+  display: inline-block;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.odds-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  border: none !important;
+  padding: 0 !important;
+  color: #fff !important;
+}
+
+.odds-subtitle {
+  font-size: 0.88rem;
+  color: #9ec5de;
+  line-height: 1.5;
+}
+
+.odds-disclaimer {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #6ca7c4;
+}
+
+/* Favourite call-out */
+.odds-favourite-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #fef9e7 0%, #fdebd0 100%);
+  border: 2px solid #f0c040;
+  border-radius: 12px;
+  padding: 16px 22px;
+}
+
+.odds-fav-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #b8860b;
+  background: #fff3cd;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.odds-fav-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #013356;
+  flex: 1;
+}
+
+.odds-fav-odds {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1a7a2e;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Odds grid of cards */
+.odds-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.odds-card {
+  background: #ffffff;
+  border: 1px solid #d0d8e4;
+  border-radius: 12px;
+  padding: 18px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+  position: relative;
+}
+
+.odds-card:hover {
+  box-shadow: 0 6px 24px rgba(0, 20, 50, 0.12);
+  border-color: #1a6fa0;
+}
+
+.odds-card-rank {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #8a9bb0;
+}
+
+.odds-card-player {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #013356;
+}
+
+.odds-card-price {
+  font-size: 1.7rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin: 2px 0 0;
+}
+
+.odds-card-price.odds-fav {
+  color: #1a7a2e;
+}
+
+.odds-card-price.odds-mid {
+  color: #c27c0e;
+}
+
+.odds-card-price.odds-long {
+  color: #e74c3c;
+}
+
+.odds-card-prob {
+  font-size: 0.82rem;
+  color: #5a7a94;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.odds-card-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  border-top: 1px solid #e8ecf1;
+  padding-top: 10px;
+}
+
+.odds-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.odds-stat-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8a9bb0;
+  font-weight: 600;
+}
+
+.odds-stat-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1c2d3f;
+  font-variant-numeric: tabular-nums;
+}
+
+.odds-footer {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #8a9bb0;
+  font-style: italic;
+}
+
+@media (max-width: 860px) {
+  .odds-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .odds-favourite-card {
+    flex-wrap: wrap;
+  }
+}
+

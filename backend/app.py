@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.analytics import game_history, losing_streaks, metadata, player_summary, roi_series
+from backend.analytics import game_history, losing_streaks, metadata, player_summary, predictions, roi_series
 from backend.auth import create_access_token, get_current_admin, verify_password
 from suitedpockets.data import (
     create_player,
@@ -130,6 +130,11 @@ def get_roi_series(seasons: str | None = None) -> list[dict]:
 @app.get("/api/players")
 def get_players() -> list[dict]:
     return list_players()
+
+
+@app.get("/api/predictions")
+def get_predictions() -> list[dict]:
+    return predictions()
 
 
 # ---------------------------------------------------------------------------
