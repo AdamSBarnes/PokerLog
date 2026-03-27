@@ -186,11 +186,20 @@ def predict_next_game(df: pd.DataFrame, active_players: list[str] | None = None)
         .reset_index()
         .sort_values("probability", ascending=False)
         [["player", "probability", "decimal_odds", "power_score",
-          "overall_win_rate", "ewma_win_rate", "recent_form", "games_played"]]
+          "overall_win_rate", "ewma_win_rate", "recent_form", "games_played",
+          "runner_up_rate", "first_out_rate"]]
     )
 
     # Round display numbers
-    for col in ("overall_win_rate", "ewma_win_rate", "recent_form", "power_score"):
+    for col in ("overall_win_rate", "ewma_win_rate", "recent_form", "power_score",
+                "runner_up_rate", "first_out_rate"):
         out[col] = out[col].round(3)
+
+    # Fun derived stats for every player (especially entertaining for long shots)
+    out["win_one_in_ten"] = (1 - (1 - out["probability"]) ** 10).round(3)
+    # Approx probability of finishing top-2: win prob + historical runner-up rate
+    p_top2 = (out["probability"] + out["runner_up_rate"]).clip(upper=0.95)
+    out["top_two_one_in_five"] = (1 - (1 - p_top2) ** 5).round(3)
+    out["expected_games_to_win"] = (1 / out["probability"]).round(1)
 
     return out.to_dict(orient="records")

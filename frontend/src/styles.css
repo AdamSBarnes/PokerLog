@@ -700,6 +700,158 @@ tr:hover td {
   }
 }
 
+/* ─── Long Shots Lounge ─────────────────────────────────── */
+
+.longshot-header-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  position: relative;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.longshot-header-card::after {
+  content: "🐌";
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  font-size: 6rem;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.longshot-event-badge {
+  display: inline-block;
+  background: #8e44ad;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.longshot-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  border: none !important;
+  padding: 0 !important;
+  color: #fff !important;
+}
+
+.longshot-subtitle {
+  font-size: 0.88rem;
+  color: #9b9ecf;
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.longshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.longshot-card {
+  background: linear-gradient(180deg, #fdf2f8 0%, #ffffff 40%);
+  border: 1px solid #e0d0e8;
+  border-radius: 12px;
+  padding: 18px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.longshot-card:hover {
+  box-shadow: 0 6px 24px rgba(100, 20, 120, 0.12);
+  border-color: #8e44ad;
+  transform: translateY(-2px);
+}
+
+.longshot-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.longshot-card-player {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #013356;
+}
+
+.longshot-card-odds {
+  font-size: 1.3rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #e74c3c;
+}
+
+.longshot-card-odds.odds-fav {
+  color: #1a7a2e;
+}
+
+.longshot-card-odds.odds-mid {
+  color: #c27c0e;
+}
+
+.longshot-card-odds.odds-long {
+  color: #e74c3c;
+}
+
+.longshot-card-prob {
+  font-size: 0.8rem;
+  color: #8a6a9e;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.longshot-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #e8e0f0;
+  padding-top: 10px;
+}
+
+.longshot-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.longshot-stat-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+
+.longshot-stat-label {
+  font-size: 0.78rem;
+  color: #5a5a7a;
+  flex: 1;
+}
+
+.longshot-stat-value {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #8e44ad;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .longshot-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ─── Streaks page ───────────────────────────────────────── */
 
 .streaks-container {

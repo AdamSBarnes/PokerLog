@@ -14,7 +14,7 @@ import {
 
 const TABS = [
   { key: "dashboard", label: "Player Summary" },
-  { key: "odds", label: "Next Game Odds" },
+  { key: "odds", label: "Wagering Markets" },
   { key: "streaks", label: "Losing Streaks" },
   { key: "history", label: "Game History" },
   { key: "admin", label: "Admin" },
@@ -233,48 +233,6 @@ function StreaksTab({ streaks, currentStreaks }) {
         })}
       </div>
 
-      {/* ── Chart (supplemental visual) ─ */}
-      <div className="card full-width">
-        <h2>Streak Length Comparison</h2>
-        <Plot
-          data={[
-            {
-              type: "bar",
-              orientation: "h",
-              x: [...streaks].reverse().map((r) => r.streak_length),
-              y: [...streaks].reverse().map((r) => r.streak_name),
-              hovertext: [...streaks].reverse().map(
-                (r) =>
-                  `${r.player}: ${r.streak_length} games (${r.streak_loss})`
-              ),
-              hoverinfo: "text",
-              marker: {
-                color: [...streaks].reverse().map((r) =>
-                  r.is_active === 1 ? "#e67e22" : "#e74c3c"
-                ),
-                line: { width: 0 },
-              },
-              textposition: "outside",
-            },
-          ]}
-          layout={{
-            height: Math.max(300, streaks.length * 42),
-            margin: { l: 160, r: 40, t: 10, b: 40 },
-            xaxis: {
-              title: "Consecutive Losses",
-              gridcolor: "#d0d8e4",
-              color: "#013356",
-            },
-            yaxis: { color: "#013356", tickfont: { size: 12 } },
-            paper_bgcolor: "transparent",
-            plot_bgcolor: "#f8fafd",
-            font: { color: "#013356" },
-            bargap: 0.25,
-          }}
-          style={{ width: "100%" }}
-          config={{ displayModeBar: false }}
-        />
-      </div>
     </div>
   );
 }
@@ -321,6 +279,10 @@ function OddsTab() {
   if (!predictions.length) return <p className="muted">Not enough data to generate odds.</p>;
 
   const favourite = predictions[0];
+
+  // Bottom players = the long shots (at least 3)
+  const longshotStart = Math.max(0, predictions.length - Math.max(3, Math.ceil(predictions.length / 2)));
+  const longShots = predictions.slice(longshotStart);
 
   return (
     <div className="odds-container">
@@ -372,6 +334,89 @@ function OddsTab() {
           </div>
         ))}
       </div>
+
+      {/* Long Shots Lounge */}
+      {longShots.length > 0 && (
+        <>
+          <div className="longshot-header-card">
+            <span className="longshot-event-badge">🐌 REALITY CHECK</span>
+            <h2 className="longshot-title">Long Shots Lounge</h2>
+            <p className="longshot-subtitle">
+              For those whose best strategy might be hoping everyone else forgets to show up.
+            </p>
+          </div>
+
+          <div className="longshot-grid">
+            {longShots.map((p) => {
+              const gamesUntil = Math.round(p.expected_games_to_win);
+              const mockLines = [];
+
+              // "One win in next 10" — the headline stat
+              mockLines.push({
+                icon: "🎰",
+                label: "Win at least once in next 10",
+                value: formatPct(p.win_one_in_ten),
+              });
+
+              // Top-2 finish in next 5
+              mockLines.push({
+                icon: "🥈",
+                label: "Finish top 2 at least once in next 5",
+                value: formatPct(p.top_two_one_in_five),
+              });
+
+              // Expected games until win
+              mockLines.push({
+                icon: "📅",
+                label: "Expected games until next win",
+                value: `${gamesUntil} game${gamesUntil !== 1 ? "s" : ""}`,
+              });
+
+              // First-out rate roast
+              if (p.first_out_rate >= 0.2) {
+                mockLines.push({
+                  icon: "💀",
+                  label: "Chance of being first out",
+                  value: formatPct(p.first_out_rate),
+                });
+              }
+
+              // Especially savage if win prob is very low
+              if (p.probability < 0.08) {
+                const coinFlipGames = Math.ceil(Math.log(0.5) / Math.log(1 - p.probability));
+                mockLines.push({
+                  icon: "🪙",
+                  label: "Games needed for a coin-flip chance of winning",
+                  value: `${coinFlipGames}`,
+                });
+              }
+
+              return (
+                <div key={p.player} className="longshot-card">
+                  <div className="longshot-card-header">
+                    <span className="longshot-card-player">{p.player}</span>
+                    <span className={`longshot-card-odds ${oddsClass(p.decimal_odds)}`}>
+                      ${p.decimal_odds.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="longshot-card-prob">
+                    {formatPct(p.probability)} chance of winning next game
+                  </div>
+                  <div className="longshot-stats">
+                    {mockLines.map((m, i) => (
+                      <div key={i} className="longshot-stat-row">
+                        <span className="longshot-stat-icon">{m.icon}</span>
+                        <span className="longshot-stat-label">{m.label}</span>
+                        <span className="longshot-stat-value">{m.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
