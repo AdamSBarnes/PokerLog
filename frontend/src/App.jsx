@@ -116,38 +116,160 @@ function DashboardTab({ summary, roiPlotData }) {
   );
 }
 
-function StreaksTab({ streakPlotData, currentStreakPlotData }) {
+function streakMedal(rank) {
+  if (rank === 1) return "🥇";
+  if (rank === 2) return "🥈";
+  if (rank === 3) return "🥉";
+  return `#${rank}`;
+}
+
+function StreaksTab({ streaks, currentStreaks }) {
+  const maxLen = Math.max(1, ...streaks.map((s) => s.streak_length));
+  const worst = streaks.length ? streaks[0] : null;
+
   return (
-    <div className="dash-grid">
-      <div className="card">
-        <h2>Longest Losing Streaks</h2>
-        <Plot
-          data={streakPlotData}
-          layout={{
-            height: 380,
-            margin: { l: 50, r: 20, t: 20, b: 50 },
-            xaxis: { title: "Consecutive Losing Games", gridcolor: "#d0d8e4", color: "#013356" },
-            yaxis: { autorange: "reversed", showticklabels: false },
-            paper_bgcolor: "transparent",
-            plot_bgcolor: "#f8fafd",
-            font: { color: "#013356" },
-          }}
-          style={{ width: "100%" }}
-          config={{ displayModeBar: false }}
-        />
+    <div className="streaks-container">
+      {/* ── Hero header ───────────────── */}
+      <div className="streaks-header-card">
+        <span className="streaks-event-badge">🔥 WALL OF SHAME</span>
+        <h2 className="streaks-title">Losing Streaks</h2>
+        <p className="streaks-subtitle">
+          The longest droughts in league history. How long can you go without a
+          win before luck — or skill — finally turns?
+        </p>
       </div>
-      <div className="card">
-        <h2>Current Losing Streaks</h2>
+
+      {/* ── Worst-ever spotlight ───────── */}
+      {worst && (
+        <div className="streaks-spotlight">
+          <span className="streaks-spot-label">LONGEST DROUGHT</span>
+          <span className="streaks-spot-name">{worst.player}</span>
+          <span className="streaks-spot-stat">
+            {worst.streak_length} <small>games</small>
+          </span>
+          <span className="streaks-spot-detail">
+            Games {worst.streak_start_game}–{worst.streak_end_game}
+            &nbsp;·&nbsp;Lost {worst.streak_loss}
+            {worst.is_active === 1 && (
+              <span className="streak-live-badge">ACTIVE</span>
+            )}
+          </span>
+        </div>
+      )}
+
+      {/* ── Current active streaks ────── */}
+      {currentStreaks.length > 0 && (
+        <>
+          <h3 className="streaks-section-title">
+            <span className="streak-live-dot" /> Currently Active
+          </h3>
+          <div className="streaks-grid">
+            {currentStreaks.map((s) => {
+              const pct = Math.round((s.streak_length / maxLen) * 100);
+              return (
+                <div className="streak-card streak-card--active" key={s.player + s.streak_start_game}>
+                  <div className="streak-card-rank">{streakMedal(s.streak_rank)}</div>
+                  <span className="streak-live-badge">LIVE</span>
+                  <div className="streak-card-player">{s.player}</div>
+                  <div className="streak-card-length">
+                    {s.streak_length} <small>games</small>
+                  </div>
+                  <div className="streak-bar-track">
+                    <div
+                      className="streak-bar-fill streak-bar--active"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="streak-card-stats">
+                    <div className="streak-stat">
+                      <span className="streak-stat-label">From game</span>
+                      <span className="streak-stat-value">{s.streak_start_game}</span>
+                    </div>
+                    <div className="streak-stat">
+                      <span className="streak-stat-label">Lost</span>
+                      <span className="streak-stat-value">{s.streak_loss}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── All-time leaderboard ──────── */}
+      <h3 className="streaks-section-title">🏆 All-Time Top 10</h3>
+      <div className="streaks-grid">
+        {streaks.map((s) => {
+          const pct = Math.round((s.streak_length / maxLen) * 100);
+          return (
+            <div className="streak-card" key={s.player + s.streak_start_game}>
+              <div className="streak-card-rank">{streakMedal(s.streak_rank)}</div>
+              {s.is_active === 1 && <span className="streak-live-badge">ACTIVE</span>}
+              <div className="streak-card-player">{s.player}</div>
+              <div className="streak-card-length">
+                {s.streak_length} <small>games</small>
+              </div>
+              <div className="streak-bar-track">
+                <div
+                  className="streak-bar-fill"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className="streak-card-stats">
+                <div className="streak-stat">
+                  <span className="streak-stat-label">Games</span>
+                  <span className="streak-stat-value">
+                    {s.streak_start_game}–{s.streak_end_game}
+                  </span>
+                </div>
+                <div className="streak-stat">
+                  <span className="streak-stat-label">Lost</span>
+                  <span className="streak-stat-value">{s.streak_loss}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ── Chart (supplemental visual) ─ */}
+      <div className="card full-width">
+        <h2>Streak Length Comparison</h2>
         <Plot
-          data={currentStreakPlotData}
+          data={[
+            {
+              type: "bar",
+              orientation: "h",
+              x: [...streaks].reverse().map((r) => r.streak_length),
+              y: [...streaks].reverse().map((r) => r.streak_name),
+              hovertext: [...streaks].reverse().map(
+                (r) =>
+                  `${r.player}: ${r.streak_length} games (${r.streak_loss})`
+              ),
+              hoverinfo: "text",
+              marker: {
+                color: [...streaks].reverse().map((r) =>
+                  r.is_active === 1 ? "#e67e22" : "#e74c3c"
+                ),
+                line: { width: 0 },
+              },
+              textposition: "outside",
+            },
+          ]}
           layout={{
-            height: 380,
-            margin: { l: 50, r: 20, t: 20, b: 50 },
-            xaxis: { title: "Consecutive Losing Games", gridcolor: "#d0d8e4", color: "#013356" },
-            yaxis: { autorange: "reversed", showticklabels: false },
+            height: Math.max(300, streaks.length * 42),
+            margin: { l: 160, r: 40, t: 10, b: 40 },
+            xaxis: {
+              title: "Consecutive Losses",
+              gridcolor: "#d0d8e4",
+              color: "#013356",
+            },
+            yaxis: { color: "#013356", tickfont: { size: 12 } },
             paper_bgcolor: "transparent",
             plot_bgcolor: "#f8fafd",
             font: { color: "#013356" },
+            bargap: 0.25,
           }}
           style={{ width: "100%" }}
           config={{ displayModeBar: false }}
@@ -693,37 +815,6 @@ export default function App() {
     }));
   }, [roiSeries]);
 
-  const streakPlotData = useMemo(
-    () => [
-      {
-        type: "bar",
-        orientation: "h",
-        x: streaks.map((r) => r.streak_length),
-        y: streaks.map((r) => r.streak_rank),
-        text: streaks.map((r) => r.streak_name),
-        hovertext: streaks.map((r) => r.streak_name),
-        hoverinfo: "text",
-        marker: { color: "#e74c3c" },
-      },
-    ],
-    [streaks]
-  );
-
-  const currentStreakPlotData = useMemo(
-    () => [
-      {
-        type: "bar",
-        orientation: "h",
-        x: currentStreaks.map((r) => r.streak_length),
-        y: currentStreaks.map((r) => r.streak_rank),
-        text: currentStreaks.map((r) => r.streak_name),
-        hovertext: currentStreaks.map((r) => r.streak_name),
-        hoverinfo: "text",
-        marker: { color: "#e67e22" },
-      },
-    ],
-    [currentStreaks]
-  );
 
   /* ── render ───────────────────────────── */
 
@@ -778,8 +869,8 @@ export default function App() {
           {tab === "odds" && <OddsTab />}
           {tab === "streaks" && (
             <StreaksTab
-              streakPlotData={streakPlotData}
-              currentStreakPlotData={currentStreakPlotData}
+              streaks={streaks}
+              currentStreaks={currentStreaks}
             />
           )}
           {tab === "history" && <HistoryTab games={games} />}
