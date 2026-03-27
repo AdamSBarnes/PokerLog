@@ -14,6 +14,7 @@ import {
 
 const TABS = [
   { key: "dashboard", label: "Player Summary" },
+  { key: "profile", label: "Player Profiles" },
   { key: "odds", label: "Wagering Markets" },
   { key: "streaks", label: "Losing Streaks" },
   { key: "history", label: "Game History" },
@@ -423,6 +424,295 @@ function OddsTab() {
 
 /* ─── Login form ────────────────────────────────────────────── */
 
+/* ─── Player Profile Tab ────────────────────────────────────── */
+
+function ProfileStatCard({ label, value, sub, negative }) {
+  return (
+    <div className="profile-stat-card">
+      <span className="profile-stat-label">{label}</span>
+      <span className={`profile-stat-value${negative ? " negative" : ""}`}>{value}</span>
+      {sub && <span className="profile-stat-sub">{sub}</span>}
+    </div>
+  );
+}
+
+function PlayerProfileTab({ players }) {
+  const [selectedPlayer, setSelectedPlayer] = useState("");
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  const loadProfile = useCallback((name) => {
+    if (!name) { setProfile(null); return; }
+    setLoading(true);
+    setErr("");
+    fetchJson(`/api/player-profile/${encodeURIComponent(name)}`)
+      .then((data) => { setProfile(data); setErr(""); })
+      .catch((e) => { setErr(e.message); setProfile(null); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (selectedPlayer) loadProfile(selectedPlayer);
+  }, [selectedPlayer, loadProfile]);
+
+  const activePlayers = (players || []).filter((p) => p.active);
+
+  // Build personal ROI plot data
+  const roiPlotData = useMemo(() => {
+    if (!profile?.personal_roi?.length) return [];
+    return [{
+      type: "scatter",
+      mode: "lines+markers",
+      name: profile.player,
+      x: profile.personal_roi.map((r) => r.game_overall),
+      y: profile.personal_roi.map((r) => r.roi),
+      line: { color: "#013356", width: 2.5 },
+      marker: { size: 4, color: "#013356" },
+      fill: "tozeroy",
+      fillcolor: "rgba(1,51,86,0.08)",
+    }, {
+      type: "scatter",
+      mode: "lines",
+      name: "Break-even",
+      x: profile.personal_roi.map((r) => r.game_overall),
+      y: profile.personal_roi.map(() => 1.0),
+      line: { color: "#e74c3c", width: 1.5, dash: "dash" },
+      hoverinfo: "skip",
+    }];
+  }, [profile]);
+
+  if (!activePlayers.length) return <p className="muted">Loading players…</p>;
+
+  return (
+    <div className="profile-container">
+      {/* Player selector */}
+      <div className="profile-selector-card">
+        <h2 className="profile-selector-title">🔍 Player Deep Dive</h2>
+        <p className="profile-selector-sub">Select a player to explore their complete profile, strengths, weaknesses, and head-to-head records.</p>
+        <div className="profile-chip-row">
+          {activePlayers.map((p) => (
+            <button
+              key={p.name}
+              className={`profile-chip${selectedPlayer === p.name ? " active" : ""}`}
+              onClick={() => setSelectedPlayer(p.name)}
+            >
+              {p.display_name || p.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading && <p className="muted">Loading profile…</p>}
+      {err && <div className="error">{err}</div>}
+
+      {profile && !loading && (
+        <>
+          {/* ── Header ── */}
+          <div className="profile-header-card">
+            <div className="profile-header-left">
+              <h1 className="profile-player-name">{profile.player}</h1>
+              <div className="profile-tagline">
+                {profile.key_stats.net_position >= 0 ? "📈" : "📉"}{" "}
+                Career: {profile.key_stats.played} games · {profile.key_stats.wins} wins ·{" "}
+                <span className={profile.key_stats.net_position >= 0 ? "positive" : "negative"}>
+                  ${profile.key_stats.net_position.toLocaleString()}
+                </span>
+              </div>
+            </div>
+            <div className="profile-header-right">
+              <div className="profile-big-stat">
+                <span className="profile-big-stat-val">${profile.key_stats.return_rate.toFixed(2)}</span>
+                <span className="profile-big-stat-label">ROI</span>
+              </div>
+              <div className="profile-big-stat">
+                <span className="profile-big-stat-val">{(profile.key_stats.win_rate * 100).toFixed(0)}%</span>
+                <span className="profile-big-stat-label">Win Rate</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Key Stats Grid ── */}
+          <div className="profile-section">
+            <h3 className="profile-section-title">📊 Key Statistics</h3>
+            <div className="profile-stats-grid">
+              <ProfileStatCard label="Games Played" value={profile.key_stats.played} />
+              <ProfileStatCard label="Wins" value={profile.key_stats.wins} sub={`${profile.key_stats.wins_ten} in $10 games`} />
+              <ProfileStatCard label="Total Costs" value={`$${profile.key_stats.costs.toLocaleString()}`} />
+              <ProfileStatCard label="Winnings" value={`$${profile.key_stats.winnings.toLocaleString()}`} />
+              <ProfileStatCard label="Net Position" value={`$${profile.key_stats.net_position.toLocaleString()}`} negative={profile.key_stats.net_position < 0} />
+              <ProfileStatCard label="Avg Finish" value={profile.key_stats.avg_finish} />
+              <ProfileStatCard label="HU Conversion" value={`${(profile.key_stats.heads_up_conversion * 100).toFixed(0)}%`} sub={`${profile.key_stats.heads_up_wins}/${profile.key_stats.heads_up_appearances}`} />
+              <ProfileStatCard label="Runner-Up Rate" value={`${(profile.key_stats.runner_up_rate * 100).toFixed(0)}%`} sub={`${profile.key_stats.runner_up_count} times`} />
+              <ProfileStatCard label="First Out Rate" value={`${(profile.key_stats.first_out_rate * 100).toFixed(0)}%`} sub={`${profile.key_stats.first_out_count} times`} />
+              <ProfileStatCard label="Last Win" value={profile.key_stats.last_win_date || "Never"} />
+            </div>
+          </div>
+
+          {/* ── Recent Form ── */}
+          <div className="profile-section">
+            <h3 className="profile-section-title">🔥 Recent Form (Last {profile.recent_form.length})</h3>
+            <div className="profile-form-row">
+              {profile.recent_form.map((g) => (
+                <div
+                  key={g.game_overall}
+                  className={`profile-form-pip${g.won ? " win" : " loss"}`}
+                  title={`Game #${g.game_overall} — ${g.game_date}\nFinished ${g.finish_position}/${g.players_in_game} ($${g.stake})`}
+                >
+                  <span className="profile-form-letter">{g.won ? "W" : "L"}</span>
+                  <span className="profile-form-pos">{g.finish_position}/{g.players_in_game}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Strengths & Weaknesses ── */}
+          {(profile.strengths.length > 0 || profile.weaknesses.length > 0) && (
+            <div className="profile-sw-grid">
+              {profile.strengths.length > 0 && (
+                <div className="profile-sw-card strengths">
+                  <h3>💪 Strengths</h3>
+                  <ul>
+                    {profile.strengths.map((s, i) => <li key={i}>{s}</li>)}
+                  </ul>
+                </div>
+              )}
+              {profile.weaknesses.length > 0 && (
+                <div className="profile-sw-card weaknesses">
+                  <h3>⚠️ Weaknesses</h3>
+                  <ul>
+                    {profile.weaknesses.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Badges ── */}
+          {profile.badges.length > 0 && (
+            <div className="profile-section">
+              <h3 className="profile-section-title">🏅 Achievements</h3>
+              <div className="profile-badges-grid">
+                {profile.badges.map((b, i) => (
+                  <div key={i} className="profile-badge">
+                    <span className="profile-badge-icon">{b.icon}</span>
+                    <div className="profile-badge-info">
+                      <span className="profile-badge-title">{b.title}</span>
+                      <span className="profile-badge-desc">{b.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Personal ROI Chart ── */}
+          {profile.personal_roi.length > 0 && (
+            <div className="card full-width">
+              <h3 className="profile-section-title" style={{ marginBottom: 12 }}>📈 ROI Over Time</h3>
+              <Plot
+                data={roiPlotData}
+                layout={{
+                  height: 400,
+                  margin: { l: 50, r: 20, t: 10, b: 50 },
+                  paper_bgcolor: "transparent",
+                  plot_bgcolor: "#f8fafd",
+                  font: { color: "#013356" },
+                  xaxis: { title: "Game Number", gridcolor: "#d0d8e4", color: "#013356" },
+                  yaxis: { title: "Cumulative ROI", gridcolor: "#d0d8e4", color: "#013356" },
+                  showlegend: false,
+                }}
+                style={{ width: "100%" }}
+                config={{ displayModeBar: false }}
+              />
+            </div>
+          )}
+
+          {/* ── Season Breakdown ── */}
+          <div className="profile-section">
+            <h3 className="profile-section-title">📅 Season Breakdown</h3>
+            <div className="profile-season-grid">
+              {profile.best_season && (
+                <div className="profile-season-highlight best">
+                  <span className="profile-season-hl-badge">🏆 Best Season</span>
+                  <span className="profile-season-hl-num">Season {profile.best_season.season}</span>
+                  <span className="profile-season-hl-stat">${profile.best_season.roi.toFixed(2)} ROI · {profile.best_season.wins}W · ${profile.best_season.net.toLocaleString()}</span>
+                </div>
+              )}
+              {profile.worst_season && profile.worst_season.season !== profile.best_season?.season && (
+                <div className="profile-season-highlight worst">
+                  <span className="profile-season-hl-badge">💔 Worst Season</span>
+                  <span className="profile-season-hl-num">Season {profile.worst_season.season}</span>
+                  <span className="profile-season-hl-stat">${profile.worst_season.roi.toFixed(2)} ROI · {profile.worst_season.wins}W · ${profile.worst_season.net.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+            <div className="table-wrap" style={{ marginTop: 12 }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Season</th><th>Played</th><th>Wins</th><th>Win Rate</th>
+                    <th>Costs</th><th>Winnings</th><th>Net</th><th>ROI</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {profile.season_breakdown.map((s) => (
+                    <tr key={s.season}>
+                      <td><strong>S{s.season}</strong></td>
+                      <td>{s.played}</td>
+                      <td>{s.wins}</td>
+                      <td>{(s.win_rate * 100).toFixed(0)}%</td>
+                      <td>${s.costs.toLocaleString()}</td>
+                      <td>${s.winnings.toLocaleString()}</td>
+                      <td className={s.net < 0 ? "negative" : ""}>${s.net.toLocaleString()}</td>
+                      <td className={s.roi < 1 ? "negative" : ""}>${s.roi.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Head-to-Head ── */}
+          <div className="profile-section">
+            <h3 className="profile-section-title">⚔️ Head-to-Head Records</h3>
+            <div className="profile-h2h-grid">
+              {profile.head_to_head.map((h) => {
+                const total = h.my_wins + h.opp_wins;
+                const myPct = total > 0 ? Math.round((h.my_wins / total) * 100) : 50;
+                const oppPct = 100 - myPct;
+                const dominant = h.dominance >= 0.5;
+                return (
+                  <div key={h.opponent} className={`profile-h2h-card${dominant ? " dominant" : " underdog"}`}>
+                    <div className="profile-h2h-header">
+                      <span className="profile-h2h-vs">vs</span>
+                      <span className="profile-h2h-opponent">{h.opponent}</span>
+                      <span className="profile-h2h-games">{h.games_together} games</span>
+                    </div>
+                    <div className="profile-h2h-bar-row">
+                      <span className="profile-h2h-count my">{h.my_wins}W</span>
+                      <div className="profile-h2h-bar-track">
+                        <div className="profile-h2h-bar-fill my" style={{ width: `${myPct}%` }} />
+                        <div className="profile-h2h-bar-fill opp" style={{ width: `${oppPct}%` }} />
+                      </div>
+                      <span className="profile-h2h-count opp">{h.opp_wins}W</span>
+                    </div>
+                    <div className="profile-h2h-dominance">
+                      {dominant ? "👆" : "👇"} {(h.dominance * 100).toFixed(0)}% dominance
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── Login form (original) ────────────────────────────────── */
+
 function LoginForm({ onLogin }) {
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
@@ -791,7 +1081,7 @@ function AdminTab({ games, refreshData, metadata }) {
 
 export default function App() {
   const [tab, setTab] = useState("dashboard");
-  const [metadata, setMetadata] = useState({ players: [], seasons: [] });
+  const [metadata, setMetadata] = useState({ players: [], seasons: [], playerList: [] });
   const [selectedSeasons, setSelectedSeasons] = useState([]);
   const [summary, setSummary] = useState([]);
   const [streaks, setStreaks] = useState([]);
@@ -802,10 +1092,13 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchJson("/api/metadata")
-      .then((data) => {
-        setMetadata(data);
-        setSelectedSeasons(data.seasons || []);
+    Promise.all([
+      fetchJson("/api/metadata"),
+      fetchJson("/api/players"),
+    ])
+      .then(([meta, playerList]) => {
+        setMetadata({ ...meta, playerList });
+        setSelectedSeasons(meta.seasons || []);
       })
       .catch((err) => setError(err.message));
   }, [refreshKey]);
@@ -910,6 +1203,9 @@ export default function App() {
         <div className="tab-content">
           {tab === "dashboard" && (
             <DashboardTab summary={summary} roiPlotData={roiPlotData} />
+          )}
+          {tab === "profile" && (
+            <PlayerProfileTab players={metadata.playerList || []} />
           )}
           {tab === "odds" && <OddsTab />}
           {tab === "streaks" && (

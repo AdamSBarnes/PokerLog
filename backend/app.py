@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.analytics import game_history, losing_streaks, metadata, player_summary, predictions, roi_series
+from backend.analytics import game_history, losing_streaks, metadata, player_profile, player_summary, predictions, roi_series
 from backend.auth import create_access_token, get_current_admin, verify_password
 from suitedpockets.data import (
     create_player,
@@ -135,6 +135,14 @@ def get_players() -> list[dict]:
 @app.get("/api/predictions")
 def get_predictions() -> list[dict]:
     return predictions()
+
+
+@app.get("/api/player-profile/{player_name}")
+def get_player_profile(player_name: str) -> dict:
+    profile = player_profile(player_name)
+    if not profile:
+        raise HTTPException(status_code=404, detail=f"Player '{player_name}' not found")
+    return profile
 
 
 # ---------------------------------------------------------------------------
