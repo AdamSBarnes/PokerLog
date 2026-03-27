@@ -236,8 +236,6 @@ def _compute_badges(processed, player_name, pdf, total_played,
 
     # Most games played
     most_played = max(all_stats.values(), key=lambda x: x["played"])["played"]
-    if total_played == most_played:
-        badges.append({"icon": "🏋️", "title": "Iron Man", "desc": "Most games played in the league"})
 
     # Highest win rate (min 10 games)
     eligible = {p: s for p, s in all_stats.items() if s["played"] >= 10}
