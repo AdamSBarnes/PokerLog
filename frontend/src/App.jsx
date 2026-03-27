@@ -73,30 +73,26 @@ function DataTable({ rows }) {
 
 function DashboardTab({ summary, roiPlotData }) {
   return (
-    <>
-      <div className="dash-grid">
-        <div className="card">
-          <h2>Performance Summary</h2>
-          <DataTable rows={summary} />
-        </div>
-        <div className="card metric-card">
-          <h2>Metric Definitions</h2>
-          <dl className="metric-list">
-            {METRIC_DEFS.map(([term, def]) => (
-              <div key={term} className="metric-item">
-                <dt>{term}</dt>
-                <dd>{def}</dd>
-              </div>
-            ))}
-          </dl>
-          <p className="muted note">
-            Places only tracked since game 94 (early season 2). Stats filtered by
-            season. Overall winner determined by Return Rate within a season.
-          </p>
-        </div>
+    <div className="dashboard-container">
+      {/* ── Hero header ───────────────── */}
+      <div className="dashboard-header-card">
+        <span className="dashboard-event-badge">📊 LEAGUE OVERVIEW</span>
+        <h2 className="dashboard-title">Player Summary</h2>
+        <p className="dashboard-subtitle">
+          Season-by-season performance breakdown for all players.
+          Use the sidebar to filter by season.
+        </p>
       </div>
-      <div className="card full-width">
-        <h2>Return on Investment</h2>
+
+      {/* ── Performance table ──────────── */}
+      <div className="dashboard-section">
+        <h3 className="dashboard-section-title">🏆 Performance Table</h3>
+        <DataTable rows={summary} />
+      </div>
+
+      {/* ── ROI chart ─────────────────── */}
+      <div className="dashboard-section">
+        <h3 className="dashboard-section-title">📈 Return on Investment</h3>
         <Plot
           data={roiPlotData}
           layout={{
@@ -113,7 +109,24 @@ function DashboardTab({ summary, roiPlotData }) {
           config={{ displayModeBar: false }}
         />
       </div>
-    </>
+
+      {/* ── Metric definitions ─────────── */}
+      <div className="dashboard-section dashboard-metrics">
+        <h3 className="dashboard-section-title">📖 Metric Definitions</h3>
+        <div className="dashboard-metric-grid">
+          {METRIC_DEFS.map(([term, def]) => (
+            <div key={term} className="dashboard-metric-item">
+              <dt>{term}</dt>
+              <dd>{def}</dd>
+            </div>
+          ))}
+        </div>
+        <p className="muted note">
+          Places only tracked since game 94 (early season 2). Stats filtered by
+          season. Overall winner determined by Return Rate within a season.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -239,10 +252,37 @@ function StreaksTab({ streaks, currentStreaks }) {
 }
 
 function HistoryTab({ games }) {
+  const totalGames = games?.length ?? 0;
+  const latestGame = totalGames > 0 ? games[games.length - 1] : null;
+
   return (
-    <div className="card full-width">
-      <h2>Game History</h2>
-      <DataTable rows={games} />
+    <div className="history-container">
+      {/* ── Hero header ───────────────── */}
+      <div className="history-header-card">
+        <span className="history-event-badge">📜 THE RECORD BOOKS</span>
+        <h2 className="history-title">Game History</h2>
+        <p className="history-subtitle">
+          Every hand, every game, every result — the complete archive.
+        </p>
+      </div>
+
+      {/* ── Quick stats spotlight ──────── */}
+      {latestGame && (
+        <div className="history-spotlight">
+          <span className="history-spot-label">LATEST RESULT</span>
+          <span className="history-spot-name">Game #{latestGame.game_overall}</span>
+          <span className="history-spot-stat">{latestGame.winner || "—"}</span>
+          <span className="history-spot-detail">
+            {latestGame.game_date}&nbsp;·&nbsp;${latestGame.stake}&nbsp;·&nbsp;{totalGames} games total
+          </span>
+        </div>
+      )}
+
+      {/* ── Table ─────────────────────── */}
+      <div className="history-section">
+        <h3 className="history-section-title">📋 All Games</h3>
+        <DataTable rows={games} />
+      </div>
     </div>
   );
 }

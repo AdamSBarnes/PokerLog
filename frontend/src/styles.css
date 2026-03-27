@@ -1127,6 +1127,242 @@ tr:hover td {
   }
 }
 
+/* ─── Dashboard (hero-themed) ────────────────────────────────── */
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1100px;
+}
+
+.dashboard-header-card {
+  background: linear-gradient(135deg, #013356 0%, #01527a 60%, #026e9e 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-header-card::after {
+  content: "♠";
+  position: absolute;
+  top: -10px;
+  right: 20px;
+  font-size: 7rem;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.dashboard-event-badge {
+  display: inline-block;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.dashboard-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  border: none !important;
+  padding: 0 !important;
+  color: #fff !important;
+}
+
+.dashboard-subtitle {
+  font-size: 0.88rem;
+  color: #9ec5de;
+  line-height: 1.5;
+}
+
+/* Dashboard sections */
+.dashboard-section {
+  background: #ffffff;
+  border: 1px solid #d0d8e4;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 20, 50, 0.08);
+}
+
+.dashboard-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #013356;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8ecf1;
+}
+
+/* Metric definitions (new 2-col grid) */
+.dashboard-metrics {
+  background: linear-gradient(180deg, #f8fafd 0%, #ffffff 40%);
+}
+
+.dashboard-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 8px 24px;
+}
+
+.dashboard-metric-item {
+  display: flex;
+  gap: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f3f7;
+}
+
+.dashboard-metric-item dt {
+  font-weight: 700;
+  color: #013356;
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.dashboard-metric-item dt::after {
+  content: " —";
+}
+
+.dashboard-metric-item dd {
+  color: #3a5068;
+}
+
+@media (max-width: 860px) {
+  .dashboard-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ─── History (hero-themed) ──────────────────────────────────── */
+
+.history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1100px;
+}
+
+.history-header-card {
+  background: linear-gradient(135deg, #1b2838 0%, #2c3e50 60%, #34495e 100%);
+  color: #fff;
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.history-header-card::after {
+  content: "📜";
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  font-size: 6rem;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.history-event-badge {
+  display: inline-block;
+  background: #8e44ad;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.history-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  border: none !important;
+  padding: 0 !important;
+  color: #fff !important;
+}
+
+.history-subtitle {
+  font-size: 0.88rem;
+  color: #a0b4c8;
+  line-height: 1.5;
+}
+
+.history-spotlight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, #eaf2f8 0%, #d6eaf8 100%);
+  border: 2px solid #5dade2;
+  border-radius: 12px;
+  padding: 16px 22px;
+  flex-wrap: wrap;
+}
+
+.history-spot-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #1a5276;
+  background: #d4efff;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.history-spot-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #013356;
+  min-width: 100px;
+}
+
+.history-spot-stat {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #013356;
+  font-variant-numeric: tabular-nums;
+  flex: 1;
+}
+
+.history-spot-detail {
+  font-size: 0.82rem;
+  color: #5a7a94;
+  font-weight: 600;
+}
+
+.history-section {
+  background: #ffffff;
+  border: 1px solid #d0d8e4;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 20, 50, 0.08);
+}
+
+.history-section-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #013356;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8ecf1;
+}
+
+@media (max-width: 860px) {
+  .history-spotlight {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* ─── Player Profile Page ────────────────────────────────────── */
 
 .profile-container {
